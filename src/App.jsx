@@ -6,6 +6,7 @@ import FileUpload from './components/FileUpload';
 import Dashboard from './components/Dashboard';
 import AnalysisHistory from './components/AnalysisHistory';
 import ComparisonMode from './components/ComparisonMode';
+import Footer from './components/Footer';
 import Toast from './components/Toast';
 import ErrorBoundary from './components/ErrorBoundary';
 import { computeStats, formatDataPreview, parseAIResponse } from './utils/dataProcessor';
@@ -16,6 +17,8 @@ export default function App() {
   const [stats, setStats] = useState({});
   const [fileName, setFileName] = useState('');
   const [analysis, setAnalysis] = useState(null);
+  const [aiMetrics, setAiMetrics] = useState([]);
+  const [aiCharts, setAiCharts] = useState([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState(null);
@@ -90,6 +93,8 @@ export default function App() {
     setFileName(file.name);
     setSavedId(null);
     setComparisonMode(false);
+    setAiMetrics([]);
+    setAiCharts([]);
 
     try {
       const { data: parsedData, columns: cols } = await parseFileContents(file);
@@ -110,6 +115,8 @@ export default function App() {
     setIsStreaming(true);
     setError(null);
     setAnalysis('');
+    setAiMetrics([]);
+    setAiCharts([]);
 
     try {
       const response = await fetch('/api/stream', {
@@ -134,6 +141,8 @@ export default function App() {
       const decoder = new TextDecoder();
       let fullText = '';
       let buffer = '';
+      let receivedMetrics = [];
+      let receivedCharts = [];
 
       while (true) {
         const { done, value } = await reader.read();
@@ -155,6 +164,14 @@ export default function App() {
               setError(parsed.error);
               break;
             }
+            // Handle structured data event (metrics + charts)
+            if (parsed.type === 'structured') {
+              receivedMetrics = parsed.metrics || [];
+              receivedCharts = parsed.charts || [];
+              setAiMetrics(receivedMetrics);
+              setAiCharts(receivedCharts);
+              continue;
+            }
             if (parsed.content) {
               fullText += parsed.content;
               setAnalysis(fullText);
@@ -170,7 +187,7 @@ export default function App() {
 
       // Save to history
       if (fullText) {
-        saveToHistory(name || fileName, parsedData.length, cols.length, cols, computedStats, fullText);
+        saveToHistory(name || fileName, parsedData.length, cols.length, cols, computedStats, fullText, receivedMetrics, receivedCharts);
       }
     } catch (err) {
       // Fallback to non-streaming
@@ -204,8 +221,14 @@ export default function App() {
       const result = await response.json();
       setAnalysis(result.analysis);
 
+      // Read metrics and charts directly from API response
+      const metrics = result.metrics || [];
+      const charts = result.charts || [];
+      setAiMetrics(metrics);
+      setAiCharts(charts);
+
       // Save to history in the background
-      saveToHistory(name || fileName, parsedData.length, cols.length, cols, computedStats, result.analysis);
+      saveToHistory(name || fileName, parsedData.length, cols.length, cols, computedStats, result.analysis, metrics, charts);
     } catch (err) {
       setError(err.message);
       setAnalysis(null);
@@ -214,9 +237,8 @@ export default function App() {
     }
   };
 
-  const saveToHistory = async (name, rowCount, colCount, cols, computedStats, analysisText) => {
+  const saveToHistory = async (name, rowCount, colCount, cols, computedStats, analysisText, metrics, charts) => {
     try {
-      const parsed = parseAIResponse(analysisText);
       const res = await fetch('/api/history', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -227,8 +249,8 @@ export default function App() {
           columns: cols,
           stats: computedStats,
           analysis: analysisText,
-          kpis: parsed.metrics,
-          charts: parsed.chartRecommendations,
+          kpis: metrics || [],
+          charts: charts || [],
         }),
       });
       if (res.ok) {
@@ -258,6 +280,20 @@ export default function App() {
       setSavedId(record.id);
       setQueryHistory([]);
       setComparisonMode(false);
+
+      // Try to restore metrics/charts from history record, fallback to parsing
+      if (record.kpis && Array.isArray(record.kpis) && record.kpis.length > 0) {
+        setAiMetrics(record.kpis);
+      } else {
+        const parsed = parseAIResponse(record.analysis || '');
+        setAiMetrics(parsed.metrics);
+      }
+      if (record.charts && Array.isArray(record.charts) && record.charts.length > 0) {
+        setAiCharts(record.charts);
+      } else {
+        const parsed = parseAIResponse(record.analysis || '');
+        setAiCharts(parsed.chartRecommendations);
+      }
 
       // Clean the URL without reloading
       window.history.replaceState({}, '', window.location.pathname);
@@ -367,6 +403,8 @@ export default function App() {
     setStats({});
     setFileName('');
     setAnalysis(null);
+    setAiMetrics([]);
+    setAiCharts([]);
     setError(null);
     setQueryHistory([]);
     setSavedId(null);
@@ -394,7 +432,7 @@ export default function App() {
   const hasAnalysis = !!analysis;
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)]">
+    <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col">
       <Header
         fileName={fileName}
         onReset={(data || hasAnalysis || comparisonMode) ? handleReset : null}
@@ -407,7 +445,7 @@ export default function App() {
         onToggleTheme={() => setDarkMode(d => !d)}
       />
 
-      <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+      <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pb-20 flex-1 w-full">
         {comparisonMode ? (
           <ComparisonMode onBack={() => setComparisonMode(false)} />
         ) : !data && !hasAnalysis ? (
@@ -435,6 +473,8 @@ export default function App() {
                 columns={columns}
                 stats={stats}
                 analysis={analysis}
+                metrics={aiMetrics}
+                charts={aiCharts}
                 isAnalyzing={isAnalyzing}
                 isStreaming={isStreaming}
                 error={error}
@@ -445,6 +485,8 @@ export default function App() {
           </>
         )}
       </main>
+
+      <Footer />
 
       {/* Toast notifications */}
       {toast && (

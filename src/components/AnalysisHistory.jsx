@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Trash2, FileText, ChevronRight, Database, Loader2 } from 'lucide-react';
+import { Clock, Trash2, FileText, ChevronRight, Database, Loader2, FolderOpen, BarChart3 } from 'lucide-react';
 
 export default function AnalysisHistory({ onLoad }) {
   const [history, setHistory] = useState([]);
@@ -65,7 +65,9 @@ export default function AnalysisHistory({ onLoad }) {
   if (error) {
     return (
       <div className="text-center py-16">
-        <Database className="w-10 h-10 mx-auto mb-3 text-[var(--text-muted)] opacity-50" />
+        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--bg-secondary)] flex items-center justify-center">
+          <Database className="w-8 h-8 text-[var(--text-muted)] opacity-50" />
+        </div>
         <p className="text-[var(--text-muted)] text-sm">Database not connected</p>
         <p className="text-[var(--text-muted)] text-xs mt-1 opacity-60">Configure Supabase to enable history</p>
       </div>
@@ -75,9 +77,16 @@ export default function AnalysisHistory({ onLoad }) {
   if (history.length === 0) {
     return (
       <div className="text-center py-16">
-        <Clock className="w-10 h-10 mx-auto mb-3 text-[var(--text-muted)] opacity-50" />
-        <p className="text-[var(--text-muted)] text-sm">No analyses yet</p>
-        <p className="text-[var(--text-muted)] text-xs mt-1 opacity-60">Upload a CSV to get started</p>
+        <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-[var(--bg-secondary)] flex items-center justify-center relative">
+          <FolderOpen className="w-9 h-9 text-[var(--text-muted)] opacity-40" />
+          <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-xl bg-[var(--accent-glow)] flex items-center justify-center">
+            <BarChart3 className="w-4 h-4 text-[var(--accent)] opacity-60" />
+          </div>
+        </div>
+        <p className="text-[var(--text-secondary)] text-sm font-medium">No analyses yet</p>
+        <p className="text-[var(--text-muted)] text-xs mt-1.5 max-w-xs mx-auto leading-relaxed">
+          Upload a CSV or Excel file to get started. Your past analyses will appear here for quick access.
+        </p>
       </div>
     );
   }

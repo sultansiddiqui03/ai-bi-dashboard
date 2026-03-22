@@ -5,11 +5,12 @@ import ChartPanel from './ChartPanel';
 import AIInsights from './AIInsights';
 import QueryInput from './QueryInput';
 import DataPreview from './DataPreview';
+import DatasetSummary from './DatasetSummary';
 import DataFilters, { applyFilters } from './DataFilters';
 import DrillDownModal from './DrillDownModal';
 import ErrorBoundary from './ErrorBoundary';
 
-export default function Dashboard({ data, columns, stats, analysis, isAnalyzing, isStreaming, error, queryHistory, onQuery }) {
+export default function Dashboard({ data, columns, stats, analysis, metrics: propMetrics, charts: propCharts, isAnalyzing, isStreaming, error, queryHistory, onQuery }) {
   const [activeTab, setActiveTab] = useState('insights');
   const [filters, setFilters] = useState({});
   const [drillDown, setDrillDown] = useState(null);
@@ -33,21 +34,42 @@ export default function Dashboard({ data, columns, stats, analysis, isAnalyzing,
     return computeStats(filteredData, columns);
   }, [filteredData, columns, stats, filters]);
 
-  // Parse AI analysis
-  const parsed = useMemo(() => {
-    if (!analysis) return { metrics: [], chartRecommendations: [], cleanText: '' };
-    return parseAIResponse(analysis);
-  }, [analysis]);
+  // Use metrics/charts from props (two-call architecture) with fallback to parsing
+  const displayMetrics = useMemo(() => {
+    if (propMetrics && propMetrics.length > 0) return propMetrics;
+    // Fallback: parse from analysis text (backward compat with history)
+    if (!analysis) return [];
+    const parsed = parseAIResponse(analysis);
+    return parsed.metrics;
+  }, [propMetrics, analysis]);
+
+  const chartRecommendations = useMemo(() => {
+    if (propCharts && propCharts.length > 0) return propCharts;
+    // Fallback: parse from analysis text (backward compat with history)
+    if (!analysis) return [];
+    const parsed = parseAIResponse(analysis);
+    return parsed.chartRecommendations;
+  }, [propCharts, analysis]);
+
+  // Clean text for display (strip any leftover tags if from old format)
+  const cleanAnalysisText = useMemo(() => {
+    if (!analysis) return '';
+    // If metrics/charts came from props, analysis text is already clean
+    if (propMetrics && propMetrics.length > 0) return analysis;
+    // Otherwise strip old tags for backward compat
+    const parsed = parseAIResponse(analysis);
+    return parsed.cleanText;
+  }, [analysis, propMetrics]);
 
   // Prepare chart data using filtered data
   const charts = useMemo(() => {
-    if (!parsed.chartRecommendations.length || !filteredData) return [];
-    return parsed.chartRecommendations.map((config, i) => ({
+    if (!chartRecommendations.length || !filteredData) return [];
+    return chartRecommendations.map((config, i) => ({
       ...config,
       data: prepareChartData(filteredData, config),
       color: CHART_COLORS[i % CHART_COLORS.length],
     }));
-  }, [parsed.chartRecommendations, filteredData]);
+  }, [chartRecommendations, filteredData]);
 
   // Auto-generate basic charts if AI didn't provide any
   const autoCharts = useMemo(() => {
@@ -119,9 +141,12 @@ export default function Dashboard({ data, columns, stats, analysis, isAnalyzing,
         </div>
       )}
 
+      {/* Dataset Summary Bar */}
+      <DatasetSummary data={data} columns={columns} stats={displayStats} />
+
       {/* KPI Cards */}
       <ErrorBoundary fallbackMessage="Failed to render KPI cards.">
-        <KPICards metrics={parsed.metrics} stats={displayStats} columns={columns} isLoading={isAnalyzing && !isStreaming} />
+        <KPICards metrics={displayMetrics} stats={displayStats} columns={columns} isLoading={isAnalyzing && !isStreaming} />
       </ErrorBoundary>
 
       {/* Data Filters */}
@@ -168,7 +193,7 @@ export default function Dashboard({ data, columns, stats, analysis, isAnalyzing,
       {/* Tab Content */}
       <div className="min-h-[500px]">
         {activeTab === 'insights' && (
-          <AIInsights analysis={parsed.cleanText} isLoading={isAnalyzing} isStreaming={isStreaming} />
+          <AIInsights analysis={cleanAnalysisText} isLoading={isAnalyzing} isStreaming={isStreaming} />
         )}
 
         {activeTab === 'charts' && (

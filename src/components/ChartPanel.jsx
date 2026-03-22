@@ -4,6 +4,7 @@ import {
   PieChart, Pie, Cell, ScatterChart, Scatter,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
+import { BarChart3, TrendingUp, AreaChart as AreaIcon, PieChart as PieIcon, ScatterChart as ScatterIcon } from 'lucide-react';
 import { CHART_COLORS } from '../utils/dataProcessor';
 
 const TOOLTIP_STYLE = {
@@ -30,11 +31,25 @@ const GRID_STYLE = {
   stroke: 'rgba(148, 163, 184, 0.06)',
 };
 
+// Chart types that can be toggled between
+const TOGGLEABLE_TYPES = ['bar', 'line', 'area'];
+const TYPE_ICONS = {
+  bar: BarChart3,
+  line: TrendingUp,
+  area: AreaIcon,
+  pie: PieIcon,
+  scatter: ScatterIcon,
+};
+
 export default function ChartPanel({ chart, index, data: rawData, columns, stats, onDrillDown }) {
-  const { type, title, data, x, y, reason } = chart;
+  const { type: originalType, title, data, x, y, reason } = chart;
+  const [activeType, setActiveType] = useState(originalType);
   const color = CHART_COLORS[index % CHART_COLORS.length];
 
   if (!data || data.length === 0) return null;
+
+  // Determine if chart type is switchable (bar/line/area can switch between each other)
+  const canToggle = TOGGLEABLE_TYPES.includes(originalType);
 
   const handleBarClick = (entry) => {
     if (onDrillDown && entry && entry.name) {
@@ -51,18 +66,42 @@ export default function ChartPanel({ chart, index, data: rawData, columns, stats
   return (
     <div className="glass-card p-5">
       <div className="mb-4">
-        <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-1">{title}</h3>
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-1">{title}</h3>
+          {/* Chart type toggle buttons */}
+          {canToggle && (
+            <div className="flex items-center gap-1 bg-[var(--bg-secondary)] rounded-lg p-0.5">
+              {TOGGLEABLE_TYPES.map(t => {
+                const Icon = TYPE_ICONS[t];
+                return (
+                  <button
+                    key={t}
+                    onClick={() => setActiveType(t)}
+                    className={`p-1.5 rounded-md transition-all ${
+                      activeType === t
+                        ? 'bg-[var(--accent-glow)] text-[var(--accent)]'
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                    }`}
+                    title={`Switch to ${t} chart`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
         {reason && (
           <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">{reason}</p>
         )}
-        {onDrillDown && (type === 'bar' || type === 'pie') && (
+        {onDrillDown && (activeType === 'bar' || activeType === 'pie') && (
           <p className="text-[10px] text-[var(--accent)] mt-1">Click a segment to drill down</p>
         )}
       </div>
 
       <div className="h-[280px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          {renderChart(type, data, color, x, y, handleBarClick, handlePieClick)}
+          {renderChart(activeType, data, color, x, y, handleBarClick, handlePieClick)}
         </ResponsiveContainer>
       </div>
     </div>

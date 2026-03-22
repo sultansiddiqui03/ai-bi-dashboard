@@ -69,6 +69,16 @@ function FormattedAnalysis({ text, isStreaming }) {
         const trimmed = line.trim();
         if (!trimmed) return <div key={i} className="h-2" />;
 
+        // Skip lines that are just "KEY METRICS" or "CHART RECOMMENDATIONS" headers
+        // since those sections are now handled separately by KPICards and ChartPanel
+        const skipPatterns = [
+          /^\*?\*?\.?\s*KEY\s+METRICS/i,
+          /^\*?\*?\.?\s*CHART\s+RECOMMEND/i,
+          /^#+\s*KEY\s+METRICS/i,
+          /^#+\s*CHART\s+RECOMMEND/i,
+        ];
+        if (skipPatterns.some(p => p.test(trimmed))) return null;
+
         const isLastLine = i === lines.length - 1;
         const showCursor = isStreaming && isLastLine;
 
