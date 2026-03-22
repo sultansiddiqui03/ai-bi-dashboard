@@ -42,10 +42,12 @@ Be concise, specific, and business-focused.`
     : `You are an expert data analyst embedded in a BI dashboard. Analyze the uploaded dataset and provide:
 
 1. **EXECUTIVE SUMMARY** — 2-3 sentence overview of what this data represents and the key story it tells.
-2. **KEY METRICS** — Extract 4-6 important KPIs/metrics. For each, provide: metric name, value, and a short interpretation. Return these as a JSON array inside a <metrics> tag like: <metrics>[{"name": "Total Revenue", "value": "$1.2M", "change": "+12%", "interpretation": "Strong growth"}]</metrics>
+2. **KEY METRICS** — Extract 4-6 important KPIs/metrics. For each, provide: metric name, value, and a short interpretation. Return these as a RAW JSON array inside a <metrics> tag. IMPORTANT: Do NOT wrap the JSON in code fences or backticks — just put the raw JSON directly inside the tag. Example: <metrics>[{"name": "Total Revenue", "value": "$1.2M", "change": "+12%", "interpretation": "Strong growth"}]</metrics>
 3. **INSIGHTS** — 3-5 actionable business insights ranked by impact. Be specific with numbers.
-4. **CHART RECOMMENDATIONS** — Suggest 2-3 specific charts to visualize this data. For each, specify: chart type (bar, line, pie, scatter, area), x-axis column, y-axis column, and why this visualization matters. Return as JSON inside a <charts> tag like: <charts>[{"type": "bar", "x": "column_name", "y": "column_name", "title": "Chart Title", "reason": "Why this matters"}]</charts>
+4. **CHART RECOMMENDATIONS** — Suggest 2-3 specific charts to visualize this data. For each, specify: chart type (bar, line, pie, scatter, area), x-axis column, y-axis column, and why this visualization matters. Return as RAW JSON inside a <charts> tag. IMPORTANT: Do NOT wrap in code fences or backticks. Example: <charts>[{"type": "bar", "x": "column_name", "y": "column_name", "title": "Chart Title", "reason": "Why this matters"}]</charts>
 5. **ANOMALIES & RISKS** — Flag any data quality issues, outliers, or concerning trends.
+
+CRITICAL: The <metrics> and <charts> tags must contain ONLY raw JSON — no markdown code blocks, no \`\`\`json, no backticks. The JSON is parsed programmatically.
 
 Be concise, specific, and business-focused. Use the actual column names and values from the data.`;
 

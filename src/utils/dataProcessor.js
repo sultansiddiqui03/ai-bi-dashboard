@@ -63,6 +63,39 @@ export function formatDataPreview(data, maxRows = 20) {
 }
 
 /**
+ * Strip markdown code fences from a string (```json ... ``` or ``` ... ```)
+ */
+function stripCodeFences(str) {
+  return str
+    .replace(/^```(?:json)?\s*\n?/gm, '')
+    .replace(/\n?```\s*$/gm, '')
+    .trim();
+}
+
+/**
+ * Try to extract JSON from a string, handling code fences and other wrapping.
+ */
+function extractJSON(str) {
+  // First try direct parse
+  const cleaned = stripCodeFences(str).trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch (e) {
+    // Try to find a JSON array in the string
+    const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
+    if (arrayMatch) {
+      try {
+        return JSON.parse(arrayMatch[0]);
+      } catch (e2) {
+        console.warn('Failed to parse extracted JSON array:', e2);
+      }
+    }
+    console.warn('Failed to parse JSON:', e);
+    return null;
+  }
+}
+
+/**
  * Parse AI response to extract metrics and chart recommendations.
  */
 export function parseAIResponse(text) {
@@ -73,26 +106,26 @@ export function parseAIResponse(text) {
   // Extract metrics
   const metricsMatch = text.match(/<metrics>([\s\S]*?)<\/metrics>/);
   if (metricsMatch) {
-    try {
-      metrics = JSON.parse(metricsMatch[1]);
-    } catch (e) {
-      console.warn('Failed to parse metrics:', e);
-    }
+    const parsed = extractJSON(metricsMatch[1]);
+    if (parsed) metrics = parsed;
     cleanText = cleanText.replace(/<metrics>[\s\S]*?<\/metrics>/, '');
   }
 
   // Extract chart recommendations
   const chartsMatch = text.match(/<charts>([\s\S]*?)<\/charts>/);
   if (chartsMatch) {
-    try {
-      chartRecommendations = JSON.parse(chartsMatch[1]);
-    } catch (e) {
-      console.warn('Failed to parse charts:', e);
-    }
+    const parsed = extractJSON(chartsMatch[1]);
+    if (parsed) chartRecommendations = parsed;
     cleanText = cleanText.replace(/<charts>[\s\S]*?<\/charts>/, '');
   }
 
-  return { metrics, chartRecommendations, cleanText: cleanText.trim() };
+  // Clean up any leftover code fence markers in displayed text
+  cleanText = cleanText
+    .replace(/```json\s*/g, '')
+    .replace(/```\s*/g, '')
+    .trim();
+
+  return { metrics, chartRecommendations, cleanText };
 }
 
 /**
