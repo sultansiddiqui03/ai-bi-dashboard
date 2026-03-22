@@ -1,8 +1,8 @@
 import React from 'react';
 import { Sparkles } from 'lucide-react';
 
-export default function AIInsights({ analysis, isLoading }) {
-  if (isLoading) {
+export default function AIInsights({ analysis, isLoading, isStreaming }) {
+  if (isLoading && !isStreaming) {
     return (
       <div className="glass-card p-8 max-w-3xl">
         <div className="flex items-center gap-3 mb-6">
@@ -26,7 +26,7 @@ export default function AIInsights({ analysis, isLoading }) {
     );
   }
 
-  if (!analysis) {
+  if (!analysis && !isStreaming) {
     return (
       <div className="glass-card p-8 text-center max-w-xl mx-auto">
         <Sparkles className="w-8 h-8 text-[var(--text-muted)] mx-auto mb-3" />
@@ -47,19 +47,19 @@ export default function AIInsights({ analysis, isLoading }) {
           <p className="text-sm font-medium text-[var(--text-primary)]">AI Analysis</p>
           <div className="flex items-center gap-1.5">
             <div className="pulse-dot" />
-            <p className="text-[11px] text-emerald-400">Powered by Claude</p>
+            <p className="text-[11px] text-emerald-400">Powered by GPT-4o-mini</p>
           </div>
         </div>
       </div>
 
       <div className="prose-custom">
-        <FormattedAnalysis text={analysis} />
+        <FormattedAnalysis text={analysis} isStreaming={isStreaming} />
       </div>
     </div>
   );
 }
 
-function FormattedAnalysis({ text }) {
+function FormattedAnalysis({ text, isStreaming }) {
   // Simple markdown-like rendering
   const lines = text.split('\n');
 
@@ -69,10 +69,13 @@ function FormattedAnalysis({ text }) {
         const trimmed = line.trim();
         if (!trimmed) return <div key={i} className="h-2" />;
 
+        const isLastLine = i === lines.length - 1;
+        const showCursor = isStreaming && isLastLine;
+
         // Headers
         if (trimmed.startsWith('**') && trimmed.endsWith('**')) {
           return (
-            <h3 key={i} className="text-sm font-semibold text-[var(--accent)] mt-5 mb-2 uppercase tracking-wide">
+            <h3 key={i} className={`text-sm font-semibold text-[var(--accent)] mt-5 mb-2 uppercase tracking-wide ${showCursor ? 'streaming-cursor' : ''}`}>
               {trimmed.replace(/\*\*/g, '')}
             </h3>
           );
@@ -81,7 +84,7 @@ function FormattedAnalysis({ text }) {
         // Headers with ##
         if (trimmed.startsWith('#')) {
           return (
-            <h3 key={i} className="text-sm font-semibold text-[var(--accent)] mt-5 mb-2">
+            <h3 key={i} className={`text-sm font-semibold text-[var(--accent)] mt-5 mb-2 ${showCursor ? 'streaming-cursor' : ''}`}>
               {trimmed.replace(/^#+\s*/, '').replace(/\*\*/g, '')}
             </h3>
           );
@@ -94,7 +97,7 @@ function FormattedAnalysis({ text }) {
               <span className="text-[var(--accent)] font-mono text-xs mt-0.5 shrink-0 w-5">
                 {trimmed.match(/^\d+/)[0]}.
               </span>
-              <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+              <p className={`text-sm text-[var(--text-secondary)] leading-relaxed ${showCursor ? 'streaming-cursor' : ''}`}>
                 <InlineFormat text={trimmed.replace(/^\d+[\.\)]\s*/, '')} />
               </p>
             </div>
@@ -106,7 +109,7 @@ function FormattedAnalysis({ text }) {
           return (
             <div key={i} className="flex gap-3 py-0.5 pl-2">
               <span className="text-[var(--accent)] mt-1.5 shrink-0">•</span>
-              <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+              <p className={`text-sm text-[var(--text-secondary)] leading-relaxed ${showCursor ? 'streaming-cursor' : ''}`}>
                 <InlineFormat text={trimmed.replace(/^[-•]\s*/, '')} />
               </p>
             </div>
@@ -115,7 +118,7 @@ function FormattedAnalysis({ text }) {
 
         // Regular paragraph
         return (
-          <p key={i} className="text-sm text-[var(--text-secondary)] leading-relaxed">
+          <p key={i} className={`text-sm text-[var(--text-secondary)] leading-relaxed ${showCursor ? 'streaming-cursor' : ''}`}>
             <InlineFormat text={trimmed} />
           </p>
         );

@@ -1,7 +1,8 @@
 import React from 'react';
-import { Brain, RotateCcw, Database, Columns } from 'lucide-react';
+import { Brain, RotateCcw, Database, Columns, Sun, Moon, Share2, Link } from 'lucide-react';
+import ExportButton from './ExportButton';
 
-export default function Header({ fileName, onReset, rowCount, colCount }) {
+export default function Header({ fileName, onReset, rowCount, colCount, hasAnalysis, savedId, onShare, darkMode, onToggleTheme }) {
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--border-subtle)] bg-[var(--bg-primary)]/80 backdrop-blur-xl">
       <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -35,7 +36,31 @@ export default function Header({ fileName, onReset, rowCount, colCount }) {
         )}
 
         {/* Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {/* Theme toggle */}
+          <button
+            onClick={onToggleTheme}
+            className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/5 transition-colors"
+            title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+
+          {/* Share button */}
+          {hasAnalysis && savedId && (
+            <button
+              onClick={onShare}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-lg hover:bg-white/5 transition-colors"
+              title="Copy shareable link"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Share</span>
+            </button>
+          )}
+
+          {/* Export button */}
+          {hasAnalysis && <ExportButton />}
+
           {onReset && (
             <button
               onClick={onReset}
@@ -46,7 +71,7 @@ export default function Header({ fileName, onReset, rowCount, colCount }) {
             </button>
           )}
           <a
-            href="https://github.com"
+            href="https://github.com/sultansiddiqui03/ai-bi-dashboard"
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"

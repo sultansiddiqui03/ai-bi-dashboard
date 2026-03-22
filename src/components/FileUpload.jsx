@@ -1,22 +1,38 @@
 import React, { useState, useRef } from 'react';
-import { Upload, FileSpreadsheet, Sparkles, BarChart3, MessageSquare, Zap } from 'lucide-react';
+import { Upload, FileSpreadsheet, Sparkles, BarChart3, MessageSquare, Zap, ArrowLeftRight } from 'lucide-react';
 
-export default function FileUpload({ onUpload, error }) {
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+export default function FileUpload({ onUpload, error, onCompareMode }) {
   const [isDragOver, setIsDragOver] = useState(false);
+  const [sizeError, setSizeError] = useState(null);
   const fileInputRef = useRef(null);
+
+  const validateAndUpload = (file) => {
+    setSizeError(null);
+    if (file.size > MAX_FILE_SIZE) {
+      setSizeError(`File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is 10MB.`);
+      return;
+    }
+    const validExtensions = ['.csv', '.tsv', '.xlsx', '.xls'];
+    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (!validExtensions.includes(ext)) {
+      setSizeError('Unsupported file type. Please upload a CSV, TSV, or Excel file.');
+      return;
+    }
+    onUpload(file);
+  };
 
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragOver(false);
     const file = e.dataTransfer.files[0];
-    if (file && (file.name.endsWith('.csv') || file.name.endsWith('.tsv'))) {
-      onUpload(file);
-    }
+    if (file) validateAndUpload(file);
   };
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
-    if (file) onUpload(file);
+    if (file) validateAndUpload(file);
   };
 
   const handleDemoData = async () => {
@@ -60,6 +76,8 @@ export default function FileUpload({ onUpload, error }) {
     { icon: Zap, label: 'Actionable Recommendations', desc: 'Business-focused insights ranked by impact' },
   ];
 
+  const displayError = sizeError || error;
+
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] py-12">
       {/* Hero */}
@@ -88,7 +106,7 @@ export default function FileUpload({ onUpload, error }) {
         <input
           ref={fileInputRef}
           type="file"
-          accept=".csv,.tsv"
+          accept=".csv,.tsv,.xlsx,.xls"
           onChange={handleFileSelect}
           className="hidden"
         />
@@ -102,28 +120,41 @@ export default function FileUpload({ onUpload, error }) {
         </div>
 
         <p className="text-lg font-medium text-[var(--text-primary)] mb-2">
-          {isDragOver ? 'Drop your file here' : 'Drag & drop your CSV file'}
+          {isDragOver ? 'Drop your file here' : 'Drag & drop your data file'}
         </p>
         <p className="text-sm text-[var(--text-muted)] mb-6">
-          or click to browse • CSV and TSV files supported
+          or click to browse — CSV, TSV, and Excel files supported (max 10MB)
         </p>
 
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            handleDemoData();
-          }}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 border border-[var(--border-subtle)] text-sm text-[var(--text-secondary)] hover:text-[var(--accent)] hover:border-[var(--border-active)] transition-all"
-        >
-          <Sparkles className="w-4 h-4" />
-          Try with sample data
-        </button>
+        <div className="flex items-center justify-center gap-3">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDemoData();
+            }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 border border-[var(--border-subtle)] text-sm text-[var(--text-secondary)] hover:text-[var(--accent)] hover:border-[var(--border-active)] transition-all"
+          >
+            <Sparkles className="w-4 h-4" />
+            Try with sample data
+          </button>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onCompareMode?.();
+            }}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 border border-[var(--border-subtle)] text-sm text-[var(--text-secondary)] hover:text-[var(--accent)] hover:border-[var(--border-active)] transition-all"
+          >
+            <ArrowLeftRight className="w-4 h-4" />
+            Compare Datasets
+          </button>
+        </div>
       </div>
 
       {/* Error */}
-      {error && (
+      {displayError && (
         <div className="mt-4 px-4 py-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm max-w-2xl w-full">
-          {error}
+          {displayError}
         </div>
       )}
 

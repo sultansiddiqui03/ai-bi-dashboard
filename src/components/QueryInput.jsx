@@ -58,7 +58,7 @@ export default function QueryInput({ onQuery, queryHistory, isDataLoaded }) {
                       <span className="text-sm text-[var(--text-muted)]">Analyzing...</span>
                     </div>
                   ) : (
-                    <div className="text-sm text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap">
+                    <div className={`text-sm text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap ${entry.streaming ? 'streaming-cursor' : ''}`}>
                       <FormattedResponse text={entry.answer} />
                     </div>
                   )}
@@ -110,6 +110,9 @@ export default function QueryInput({ onQuery, queryHistory, isDataLoaded }) {
             <Send className="w-4 h-4" />
           </button>
         </div>
+        <p className="text-[10px] text-[var(--text-muted)] mt-1.5 text-center">
+          Press Enter to send
+        </p>
       </div>
     </div>
   );

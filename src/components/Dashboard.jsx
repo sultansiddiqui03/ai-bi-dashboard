@@ -1,13 +1,37 @@
 import React, { useState, useMemo } from 'react';
-import { parseAIResponse, prepareChartData, CHART_COLORS, formatNumber } from '../utils/dataProcessor';
+import { parseAIResponse, prepareChartData, CHART_COLORS, formatNumber, computeStats } from '../utils/dataProcessor';
 import KPICards from './KPICards';
 import ChartPanel from './ChartPanel';
 import AIInsights from './AIInsights';
 import QueryInput from './QueryInput';
 import DataPreview from './DataPreview';
+import DataFilters, { applyFilters } from './DataFilters';
+import DrillDownModal from './DrillDownModal';
+import ErrorBoundary from './ErrorBoundary';
 
-export default function Dashboard({ data, columns, stats, analysis, isAnalyzing, error, queryHistory, onQuery }) {
+export default function Dashboard({ data, columns, stats, analysis, isAnalyzing, isStreaming, error, queryHistory, onQuery }) {
   const [activeTab, setActiveTab] = useState('insights');
+  const [filters, setFilters] = useState({});
+  const [drillDown, setDrillDown] = useState(null);
+
+  // Apply filters to data
+  const filteredData = useMemo(() => {
+    if (!data) return data;
+    return applyFilters(data, filters);
+  }, [data, filters]);
+
+  // Recompute stats for filtered data
+  const displayStats = useMemo(() => {
+    if (!filteredData || !columns.length) return stats;
+    const hasActiveFilters = Object.keys(filters).some(k => {
+      const f = filters[k];
+      if (f.type === 'categorical') return f.values && f.values.length > 0;
+      if (f.type === 'numeric') return f.min !== undefined || f.max !== undefined;
+      return false;
+    });
+    if (!hasActiveFilters) return stats;
+    return computeStats(filteredData, columns);
+  }, [filteredData, columns, stats, filters]);
 
   // Parse AI analysis
   const parsed = useMemo(() => {
@@ -15,25 +39,24 @@ export default function Dashboard({ data, columns, stats, analysis, isAnalyzing,
     return parseAIResponse(analysis);
   }, [analysis]);
 
-  // Prepare chart data
+  // Prepare chart data using filtered data
   const charts = useMemo(() => {
-    if (!parsed.chartRecommendations.length || !data) return [];
+    if (!parsed.chartRecommendations.length || !filteredData) return [];
     return parsed.chartRecommendations.map((config, i) => ({
       ...config,
-      data: prepareChartData(data, config),
+      data: prepareChartData(filteredData, config),
       color: CHART_COLORS[i % CHART_COLORS.length],
     }));
-  }, [parsed.chartRecommendations, data]);
+  }, [parsed.chartRecommendations, filteredData]);
 
   // Auto-generate basic charts if AI didn't provide any
   const autoCharts = useMemo(() => {
-    if (charts.length > 0 || !data || !columns.length) return [];
+    if (charts.length > 0 || !filteredData || !columns.length) return [];
 
-    const numericCols = columns.filter(c => stats[c]?.type === 'numeric');
-    const categoricalCols = columns.filter(c => stats[c]?.type === 'categorical');
+    const numericCols = columns.filter(c => displayStats[c]?.type === 'numeric');
+    const categoricalCols = columns.filter(c => displayStats[c]?.type === 'categorical');
     const generated = [];
 
-    // If we have categorical + numeric, make a bar chart
     if (categoricalCols.length > 0 && numericCols.length > 0) {
       const cat = categoricalCols[0];
       const num = numericCols[0];
@@ -42,24 +65,22 @@ export default function Dashboard({ data, columns, stats, analysis, isAnalyzing,
         x: cat,
         y: num,
         title: `${num} by ${cat}`,
-        data: prepareChartData(data, { type: 'bar', x: cat, y: num }),
+        data: prepareChartData(filteredData, { type: 'bar', x: cat, y: num }),
         color: CHART_COLORS[0],
       });
     }
 
-    // If we have multiple numeric cols, scatter
     if (numericCols.length >= 2) {
       generated.push({
         type: 'scatter',
         x: numericCols[0],
         y: numericCols[1],
         title: `${numericCols[1]} vs ${numericCols[0]}`,
-        data: prepareChartData(data, { type: 'scatter', x: numericCols[0], y: numericCols[1] }),
+        data: prepareChartData(filteredData, { type: 'scatter', x: numericCols[0], y: numericCols[1] }),
         color: CHART_COLORS[1],
       });
     }
 
-    // Pie chart if categorical
     if (categoricalCols.length > 0) {
       const cat = categoricalCols[0];
       generated.push({
@@ -67,13 +88,13 @@ export default function Dashboard({ data, columns, stats, analysis, isAnalyzing,
         x: cat,
         y: null,
         title: `Distribution by ${cat}`,
-        data: prepareChartData(data, { type: 'pie', x: cat }),
+        data: prepareChartData(filteredData, { type: 'pie', x: cat }),
         color: CHART_COLORS[2],
       });
     }
 
     return generated;
-  }, [charts, data, columns, stats]);
+  }, [charts, filteredData, columns, displayStats]);
 
   const displayCharts = charts.length > 0 ? charts : autoCharts;
 
@@ -83,6 +104,11 @@ export default function Dashboard({ data, columns, stats, analysis, isAnalyzing,
     { id: 'data', label: 'Data Preview' },
     { id: 'query', label: 'Ask AI' },
   ];
+
+  const handleDrillDown = (col, value) => {
+    if (!filteredData) return;
+    setDrillDown({ filterCol: col, filterValue: value });
+  };
 
   return (
     <div className="space-y-6 pt-6 animate-fade-in">
@@ -94,7 +120,28 @@ export default function Dashboard({ data, columns, stats, analysis, isAnalyzing,
       )}
 
       {/* KPI Cards */}
-      <KPICards metrics={parsed.metrics} stats={stats} columns={columns} isLoading={isAnalyzing} />
+      <ErrorBoundary fallbackMessage="Failed to render KPI cards.">
+        <KPICards metrics={parsed.metrics} stats={displayStats} columns={columns} isLoading={isAnalyzing && !isStreaming} />
+      </ErrorBoundary>
+
+      {/* Data Filters */}
+      {data && columns.length > 0 && (
+        <DataFilters
+          data={data}
+          columns={columns}
+          stats={stats}
+          filters={filters}
+          onFiltersChange={setFilters}
+        />
+      )}
+
+      {/* Filter info */}
+      {filteredData && data && filteredData.length !== data.length && (
+        <div className="text-xs text-[var(--text-muted)] flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+          Showing {filteredData.length.toLocaleString()} of {data.length.toLocaleString()} rows (filtered)
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex items-center gap-1 border-b border-[var(--border-subtle)] pb-px overflow-x-auto">
@@ -121,24 +168,36 @@ export default function Dashboard({ data, columns, stats, analysis, isAnalyzing,
       {/* Tab Content */}
       <div className="min-h-[500px]">
         {activeTab === 'insights' && (
-          <AIInsights analysis={parsed.cleanText} isLoading={isAnalyzing} />
+          <AIInsights analysis={parsed.cleanText} isLoading={isAnalyzing} isStreaming={isStreaming} />
         )}
 
         {activeTab === 'charts' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 stagger-in">
-            {displayCharts.map((chart, i) => (
-              <ChartPanel key={i} chart={chart} index={i} />
-            ))}
-            {displayCharts.length === 0 && !isAnalyzing && (
-              <div className="col-span-2 text-center py-20 text-[var(--text-muted)]">
-                <p>No chart recommendations yet. The AI is still analyzing your data.</p>
-              </div>
-            )}
-          </div>
+          <ErrorBoundary fallbackMessage="Failed to render charts.">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 stagger-in">
+              {displayCharts.map((chart, i) => (
+                <ChartPanel
+                  key={i}
+                  chart={chart}
+                  index={i}
+                  data={filteredData}
+                  columns={columns}
+                  stats={displayStats}
+                  onDrillDown={filteredData ? handleDrillDown : undefined}
+                />
+              ))}
+              {displayCharts.length === 0 && !isAnalyzing && (
+                <div className="col-span-2 text-center py-20 text-[var(--text-muted)]">
+                  <p>No chart recommendations yet. The AI is still analyzing your data.</p>
+                </div>
+              )}
+            </div>
+          </ErrorBoundary>
         )}
 
         {activeTab === 'data' && (
-          <DataPreview data={data} columns={columns} stats={stats} />
+          <ErrorBoundary fallbackMessage="Failed to render data preview.">
+            <DataPreview data={filteredData} columns={columns} stats={displayStats} />
+          </ErrorBoundary>
         )}
 
         {activeTab === 'query' && (
@@ -149,6 +208,18 @@ export default function Dashboard({ data, columns, stats, analysis, isAnalyzing,
           />
         )}
       </div>
+
+      {/* Drill-down modal */}
+      {drillDown && filteredData && (
+        <DrillDownModal
+          data={filteredData}
+          columns={columns}
+          stats={displayStats}
+          filterCol={drillDown.filterCol}
+          filterValue={drillDown.filterValue}
+          onClose={() => setDrillDown(null)}
+        />
+      )}
     </div>
   );
 }

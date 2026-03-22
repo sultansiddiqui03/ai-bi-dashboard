@@ -1,0 +1,49 @@
+Date,Region,Product_Category,Product_Name,Units_Sold,Unit_Price,Revenue,Cost,Profit,Customer_Segment,Sales_Channel,Customer_Satisfaction
+2025-01-05,North,Electronics,Wireless Earbuds,145,49.99,7248.55,3624.28,3624.27,Consumer,Online,4.5
+2025-01-05,South,Clothing,Winter Jacket,89,129.99,11569.11,5784.56,5784.55,Corporate,Retail,4.2
+2025-01-05,East,Electronics,Smart Watch,67,199.99,13399.33,8039.60,5359.73,Consumer,Online,4.7
+2025-01-05,West,Home & Kitchen,Air Purifier,34,249.99,8499.66,5099.80,3399.86,Consumer,Retail,4.1
+2025-01-12,North,Electronics,Bluetooth Speaker,112,79.99,8958.88,4479.44,4479.44,Small Business,Online,4.3
+2025-01-12,South,Clothing,Running Shoes,156,89.99,14038.44,7019.22,7019.22,Consumer,Online,4.6
+2025-01-12,East,Home & Kitchen,Robot Vacuum,28,349.99,9799.72,6859.80,2939.92,Corporate,Retail,4.8
+2025-01-12,West,Electronics,Laptop Stand,203,39.99,8117.97,4058.99,4058.98,Consumer,Online,4.0
+2025-01-19,North,Clothing,Yoga Pants,178,54.99,9788.22,4894.11,4894.11,Consumer,Retail,4.4
+2025-01-19,South,Electronics,USB-C Hub,94,59.99,5639.06,2819.53,2819.53,Small Business,Online,4.1
+2025-01-19,East,Clothing,Denim Jacket,65,119.99,7799.35,4679.61,3119.74,Consumer,Online,4.5
+2025-01-19,West,Home & Kitchen,Coffee Maker,87,149.99,13049.13,7829.48,5219.65,Corporate,Retail,4.3
+2025-01-26,North,Home & Kitchen,Standing Desk,42,399.99,16799.58,10079.75,6719.83,Corporate,Online,4.9
+2025-01-26,South,Electronics,Wireless Mouse,231,29.99,6927.69,3463.85,3463.84,Consumer,Online,3.8
+2025-01-26,East,Clothing,Sneakers,134,109.99,14738.66,8843.20,5895.46,Consumer,Retail,4.6
+2025-01-26,West,Electronics,Portable Charger,189,44.99,8503.11,4251.56,4251.55,Small Business,Online,4.2
+2025-02-02,North,Electronics,Noise Cancelling Headphones,78,179.99,14039.22,8423.53,5615.69,Consumer,Online,4.8
+2025-02-02,South,Home & Kitchen,Smart Thermostat,56,129.99,7279.44,4367.66,2911.78,Corporate,Retail,4.4
+2025-02-02,East,Electronics,Webcam HD,143,69.99,10008.57,5004.29,5004.28,Small Business,Online,4.0
+2025-02-02,West,Clothing,Hoodie,198,49.99,9898.02,4949.01,4949.01,Consumer,Retail,4.3
+2025-02-09,North,Clothing,Polo Shirt,167,39.99,6678.33,3339.17,3339.16,Consumer,Online,4.1
+2025-02-09,South,Electronics,Tablet Case,210,24.99,5247.90,2623.95,2623.95,Consumer,Online,3.9
+2025-02-09,East,Home & Kitchen,Blender Pro,73,89.99,6569.27,3941.56,2627.71,Consumer,Retail,4.5
+2025-02-09,West,Electronics,Gaming Mouse,124,79.99,9918.76,5951.26,3967.50,Small Business,Online,4.7
+2025-02-16,North,Home & Kitchen,Air Fryer,91,119.99,10919.09,6551.45,4367.64,Consumer,Retail,4.6
+2025-02-16,South,Clothing,Track Pants,145,44.99,6523.55,3261.78,3261.77,Consumer,Online,4.2
+2025-02-16,East,Electronics,Smart Doorbell,54,149.99,8099.46,4859.68,3239.78,Corporate,Online,4.4
+2025-02-16,West,Clothing,Leather Belt,186,34.99,6508.14,3254.07,3254.07,Consumer,Retail,3.9
+2025-02-23,North,Electronics,Power Bank 20K,156,54.99,8578.44,4289.22,4289.22,Consumer,Online,4.3
+2025-02-23,South,Home & Kitchen,Instant Pot,68,99.99,6799.32,4079.59,2719.73,Corporate,Retail,4.7
+2025-02-23,East,Clothing,Windbreaker,102,79.99,8158.98,4895.39,3263.59,Consumer,Online,4.1
+2025-02-23,West,Electronics,Mechanical Keyboard,87,129.99,11309.13,6785.48,4523.65,Small Business,Online,4.8
+2025-03-02,North,Clothing,Formal Shirt,134,69.99,9378.66,4689.33,4689.33,Corporate,Retail,4.4
+2025-03-02,South,Electronics,Action Camera,45,229.99,10349.55,6209.73,4139.82,Consumer,Online,4.6
+2025-03-02,East,Home & Kitchen,Water Purifier,38,299.99,11399.62,7979.73,3419.89,Consumer,Retail,4.5
+2025-03-02,West,Clothing,Cargo Shorts,212,34.99,7417.88,3708.94,3708.94,Consumer,Online,4.0
+2025-03-09,North,Electronics,Smart Plug 4-Pack,178,39.99,7118.22,3559.11,3559.11,Consumer,Online,4.2
+2025-03-09,South,Clothing,Swim Trunks,98,29.99,2939.02,1469.51,1469.51,Consumer,Retail,4.1
+2025-03-09,East,Electronics,Dash Cam,62,149.99,9299.38,5579.63,3719.75,Small Business,Online,4.7
+2025-03-09,West,Home & Kitchen,Espresso Machine,31,449.99,13949.69,9764.78,4184.91,Corporate,Retail,4.9
+2025-03-16,North,Home & Kitchen,Smart Scale,143,49.99,7148.57,3574.29,3574.28,Consumer,Online,4.0
+2025-03-16,South,Electronics,Wireless Charger,167,34.99,5843.33,2921.67,2921.66,Consumer,Online,4.3
+2025-03-16,East,Clothing,Rain Jacket,76,99.99,7599.24,4559.54,3039.70,Consumer,Retail,4.5
+2025-03-16,West,Electronics,Monitor Light Bar,89,59.99,5339.11,2669.56,2669.55,Small Business,Online,4.4
+2025-03-23,North,Electronics,TWS Earbuds Pro,198,89.99,17818.02,8909.01,8909.01,Consumer,Online,4.8
+2025-03-23,South,Home & Kitchen,Sous Vide,47,129.99,6109.53,3665.72,2443.81,Corporate,Retail,4.6
+2025-03-23,East,Clothing,Linen Shirt,121,59.99,7258.79,3629.40,3629.39,Consumer,Online,4.2
+2025-03-23,West,Electronics,Portable SSD 1TB,83,109.99,9129.17,5477.50,3651.67,Consumer,Online,4.7

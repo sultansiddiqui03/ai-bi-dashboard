@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   BarChart, Bar, LineChart, Line, AreaChart, Area,
   PieChart, Pie, Cell, ScatterChart, Scatter,
@@ -30,11 +30,23 @@ const GRID_STYLE = {
   stroke: 'rgba(148, 163, 184, 0.06)',
 };
 
-export default function ChartPanel({ chart, index }) {
+export default function ChartPanel({ chart, index, data: rawData, columns, stats, onDrillDown }) {
   const { type, title, data, x, y, reason } = chart;
   const color = CHART_COLORS[index % CHART_COLORS.length];
 
   if (!data || data.length === 0) return null;
+
+  const handleBarClick = (entry) => {
+    if (onDrillDown && entry && entry.name) {
+      onDrillDown(x, entry.name);
+    }
+  };
+
+  const handlePieClick = (entry) => {
+    if (onDrillDown && entry && entry.name) {
+      onDrillDown(x, entry.name);
+    }
+  };
 
   return (
     <div className="glass-card p-5">
@@ -43,18 +55,21 @@ export default function ChartPanel({ chart, index }) {
         {reason && (
           <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">{reason}</p>
         )}
+        {onDrillDown && (type === 'bar' || type === 'pie') && (
+          <p className="text-[10px] text-[var(--accent)] mt-1">Click a segment to drill down</p>
+        )}
       </div>
 
       <div className="h-[280px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          {renderChart(type, data, color, x, y)}
+          {renderChart(type, data, color, x, y, handleBarClick, handlePieClick)}
         </ResponsiveContainer>
       </div>
     </div>
   );
 }
 
-function renderChart(type, data, color, xKey, yKey) {
+function renderChart(type, data, color, xKey, yKey, onBarClick, onPieClick) {
   switch (type) {
     case 'bar':
       return (
@@ -63,7 +78,7 @@ function renderChart(type, data, color, xKey, yKey) {
           <XAxis dataKey="name" tick={AXIS_STYLE} tickLine={false} axisLine={false} interval={0} angle={-25} textAnchor="end" height={60} />
           <YAxis tick={AXIS_STYLE} tickLine={false} axisLine={false} width={60} />
           <Tooltip {...TOOLTIP_STYLE} />
-          <Bar dataKey="value" fill={color} radius={[4, 4, 0, 0]} maxBarSize={40}>
+          <Bar dataKey="value" fill={color} radius={[4, 4, 0, 0]} maxBarSize={40} onClick={(entry) => onBarClick(entry)} style={{ cursor: 'pointer' }}>
             {data.map((_, i) => (
               <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} fillOpacity={0.85} />
             ))}
@@ -112,6 +127,8 @@ function renderChart(type, data, color, xKey, yKey) {
             paddingAngle={2}
             label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
             labelLine={{ stroke: '#64748b', strokeWidth: 0.5 }}
+            onClick={(entry) => onPieClick(entry)}
+            style={{ cursor: 'pointer' }}
           >
             {data.map((_, i) => (
               <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} fillOpacity={0.85} />
@@ -139,7 +156,7 @@ function renderChart(type, data, color, xKey, yKey) {
           <XAxis dataKey="name" tick={AXIS_STYLE} tickLine={false} axisLine={false} />
           <YAxis tick={AXIS_STYLE} tickLine={false} axisLine={false} width={60} />
           <Tooltip {...TOOLTIP_STYLE} />
-          <Bar dataKey="value" fill={color} radius={[4, 4, 0, 0]} />
+          <Bar dataKey="value" fill={color} radius={[4, 4, 0, 0]} onClick={(entry) => onBarClick(entry)} style={{ cursor: 'pointer' }} />
         </BarChart>
       );
   }
