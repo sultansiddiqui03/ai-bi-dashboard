@@ -9,6 +9,7 @@ import ComparisonMode from './components/ComparisonMode';
 import Footer from './components/Footer';
 import Toast from './components/Toast';
 import ErrorBoundary from './components/ErrorBoundary';
+import KeyboardShortcuts from './components/KeyboardShortcuts';
 import { computeStats, formatDataPreview, parseAIResponse } from './utils/dataProcessor';
 
 export default function App() {
@@ -26,6 +27,7 @@ export default function App() {
   const [savedId, setSavedId] = useState(null);
   const [toast, setToast] = useState(null);
   const [comparisonMode, setComparisonMode] = useState(false);
+  const [activeTab, setActiveTab] = useState('insights');
 
   // Dark mode
   const [darkMode, setDarkMode] = useState(() => {
@@ -55,6 +57,38 @@ export default function App() {
   const showToast = (message, type = 'success') => {
     setToast({ message, type, key: Date.now() });
   };
+
+  // Keyboard shortcut handler
+  const handleShortcut = useCallback((action) => {
+    switch (action) {
+      case 'search':
+      case 'tab-query':
+        setActiveTab('query');
+        break;
+      case 'tab-insights':
+        setActiveTab('insights');
+        break;
+      case 'tab-charts':
+        setActiveTab('charts');
+        break;
+      case 'tab-data':
+        setActiveTab('data');
+        break;
+      case 'tab-builder':
+        setActiveTab('builder');
+        break;
+      case 'tab-templates':
+        setActiveTab('templates');
+        break;
+      case 'theme':
+        setDarkMode(d => !d);
+        break;
+      case 'export':
+        // Trigger export button click
+        document.querySelector('[data-export-btn]')?.click();
+        break;
+    }
+  }, []);
 
   const parseFileContents = (file) => {
     return new Promise((resolve, reject) => {
@@ -95,6 +129,7 @@ export default function App() {
     setComparisonMode(false);
     setAiMetrics([]);
     setAiCharts([]);
+    setActiveTab('insights');
 
     try {
       const { data: parsedData, columns: cols } = await parseFileContents(file);
@@ -131,7 +166,6 @@ export default function App() {
       });
 
       if (!response.ok) {
-        // Fallback to non-streaming
         setIsStreaming(false);
         await analyzeData(parsedData, cols, computedStats, name);
         return;
@@ -164,7 +198,6 @@ export default function App() {
               setError(parsed.error);
               break;
             }
-            // Handle structured data event (metrics + charts)
             if (parsed.type === 'structured') {
               receivedMetrics = parsed.metrics || [];
               receivedCharts = parsed.charts || [];
@@ -185,12 +218,10 @@ export default function App() {
       setIsStreaming(false);
       setIsAnalyzing(false);
 
-      // Save to history
       if (fullText) {
         saveToHistory(name || fileName, parsedData.length, cols.length, cols, computedStats, fullText, receivedMetrics, receivedCharts);
       }
     } catch (err) {
-      // Fallback to non-streaming
       setIsStreaming(false);
       console.warn('Streaming failed, falling back:', err.message);
       await analyzeData(parsedData, cols, computedStats, name);
@@ -221,13 +252,11 @@ export default function App() {
       const result = await response.json();
       setAnalysis(result.analysis);
 
-      // Read metrics and charts directly from API response
       const metrics = result.metrics || [];
       const charts = result.charts || [];
       setAiMetrics(metrics);
       setAiCharts(charts);
 
-      // Save to history in the background
       saveToHistory(name || fileName, parsedData.length, cols.length, cols, computedStats, result.analysis, metrics, charts);
     } catch (err) {
       setError(err.message);
@@ -259,7 +288,6 @@ export default function App() {
         showToast('Saved to history');
       }
     } catch (err) {
-      // Silently fail -- history is non-critical
       console.warn('Failed to save to history:', err);
     }
   };
@@ -276,12 +304,11 @@ export default function App() {
       setColumns(record.columns || []);
       setStats(record.stats || {});
       setAnalysis(record.analysis || '');
-      setData(null); // No raw data when loading from history
+      setData(null);
       setSavedId(record.id);
       setQueryHistory([]);
       setComparisonMode(false);
 
-      // Try to restore metrics/charts from history record, fallback to parsing
       if (record.kpis && Array.isArray(record.kpis) && record.kpis.length > 0) {
         setAiMetrics(record.kpis);
       } else {
@@ -295,21 +322,31 @@ export default function App() {
         setAiCharts(parsed.chartRecommendations);
       }
 
-      // Clean the URL without reloading
       window.history.replaceState({}, '', window.location.pathname);
     } catch (err) {
       setError('Failed to load analysis from history.');
     }
   };
 
+  // AI Chat with memory — include conversation history for context
   const handleQuery = async (query) => {
     if (!query.trim()) return;
 
     const newEntry = { query, answer: null, loading: true, streaming: false, id: Date.now() };
     setQueryHistory(prev => [...prev, newEntry]);
 
+    // Build conversation memory (last 5 Q&A pairs for context)
+    const recentHistory = queryHistory
+      .filter(e => e.answer && !e.loading)
+      .slice(-5)
+      .map(e => `Q: ${e.query}\nA: ${e.answer}`)
+      .join('\n\n');
+
+    const queryWithContext = recentHistory
+      ? `Previous conversation:\n${recentHistory}\n\nNew question: ${query}`
+      : query;
+
     try {
-      // Try streaming first
       const response = await fetch('/api/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -317,7 +354,7 @@ export default function App() {
           dataPreview: data ? formatDataPreview(data) : '',
           columns,
           stats,
-          query,
+          query: queryWithContext,
           mode: 'query',
         }),
       });
@@ -329,7 +366,6 @@ export default function App() {
       let fullText = '';
       let buffer = '';
 
-      // Mark as streaming
       setQueryHistory(prev =>
         prev.map(e => e.id === newEntry.id ? { ...e, loading: false, streaming: true, answer: '' } : e)
       );
@@ -364,7 +400,6 @@ export default function App() {
         prev.map(e => e.id === newEntry.id ? { ...e, streaming: false, answer: fullText || 'No response received.' } : e)
       );
     } catch (err) {
-      // Fallback to non-streaming
       try {
         const response = await fetch('/api/analyze', {
           method: 'POST',
@@ -373,7 +408,7 @@ export default function App() {
             dataPreview: data ? formatDataPreview(data) : '',
             columns,
             stats,
-            query,
+            query: queryWithContext,
             mode: 'query',
           }),
         });
@@ -397,6 +432,14 @@ export default function App() {
     }
   };
 
+  // Handle data updates from cleaning panel
+  const handleDataUpdate = useCallback((newData) => {
+    setData(newData);
+    const newStats = computeStats(newData, columns);
+    setStats(newStats);
+    showToast('Data updated successfully');
+  }, [columns]);
+
   const handleReset = () => {
     setData(null);
     setColumns([]);
@@ -410,6 +453,7 @@ export default function App() {
     setSavedId(null);
     setComparisonMode(false);
     setIsStreaming(false);
+    setActiveTab('insights');
   };
 
   const handleShare = () => {
@@ -418,7 +462,6 @@ export default function App() {
     navigator.clipboard.writeText(url).then(() => {
       showToast('Shareable link copied to clipboard!', 'info');
     }).catch(() => {
-      // Fallback
       const input = document.createElement('input');
       input.value = url;
       document.body.appendChild(input);
@@ -480,6 +523,9 @@ export default function App() {
                 error={error}
                 queryHistory={queryHistory}
                 onQuery={handleQuery}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                onDataUpdate={data ? handleDataUpdate : undefined}
               />
             </ErrorBoundary>
           </>
@@ -487,6 +533,11 @@ export default function App() {
       </main>
 
       <Footer />
+
+      {/* Keyboard shortcuts */}
+      {(data || hasAnalysis) && (
+        <KeyboardShortcuts onAction={handleShortcut} />
+      )}
 
       {/* Toast notifications */}
       {toast && (

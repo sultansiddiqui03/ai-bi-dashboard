@@ -6,6 +6,7 @@ import {
   Clock, Star, Layers, PieChart
 } from 'lucide-react';
 import { formatNumber } from '../utils/dataProcessor';
+import AnimatedNumber from './AnimatedNumber';
 
 // Map metric names to icons based on keywords
 function getMetricIcon(name) {
@@ -90,7 +91,7 @@ export default function KPICards({ metrics, stats, columns, isLoading }) {
               </p>
             </div>
             <p className="text-2xl font-semibold text-[var(--text-primary)] font-mono">
-              {formatNumber(stats[col].mean)}
+              <AnimatedNumber value={formatNumber(stats[col].mean)} duration={1200} />
             </p>
             <div className="mt-2 flex items-center gap-2">
               <div className="flex-1 h-1.5 rounded-full bg-[var(--border-subtle)] overflow-hidden">
@@ -143,7 +144,7 @@ function MetricCard({ metric, index }) {
         </p>
       </div>
       <p className="text-2xl font-semibold text-[var(--text-primary)] font-mono">
-        {metric.value}
+        <AnimatedNumber value={metric.value} duration={1400} />
       </p>
       <div className="flex items-center gap-2 mt-2">
         {changeStr && (

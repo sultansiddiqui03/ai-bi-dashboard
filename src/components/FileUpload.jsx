@@ -122,8 +122,11 @@ export default function FileUpload({ onUpload, error, onCompareMode }) {
         <p className="text-lg font-medium text-[var(--text-primary)] mb-2">
           {isDragOver ? 'Drop your file here' : 'Drag & drop your data file'}
         </p>
-        <p className="text-sm text-[var(--text-muted)] mb-6">
+        <p className="text-sm text-[var(--text-muted)] mb-2">
           or click to browse — CSV, TSV, and Excel files supported (max 10MB)
+        </p>
+        <p className="text-[10px] text-[var(--text-muted)] mb-6">
+          💡 Best results with headers in the first row · Columns like dates, amounts, categories, and IDs work great
         </p>
 
         <div className="flex items-center justify-center gap-3">

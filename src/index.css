@@ -269,3 +269,48 @@ html.light .bg-white\/5 {
 html.light .bg-white\/\[0\.02\] {
   background: rgba(0, 0, 0, 0.015);
 }
+
+/* Mobile safe area for bottom nav */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Mobile responsive improvements */
+@media (max-width: 640px) {
+  .glass-card {
+    border-radius: 12px;
+  }
+
+  main {
+    padding-bottom: 5rem !important;
+  }
+
+  /* Make select dropdowns readable on mobile */
+  select {
+    font-size: 16px !important; /* Prevents iOS zoom */
+  }
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Swipeable horizontal scroll for mobile charts */
+.mobile-scroll-snap {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.mobile-scroll-snap > * {
+  scroll-snap-align: start;
+}
+
+/* Focus visible styles for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

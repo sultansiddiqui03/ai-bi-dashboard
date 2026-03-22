@@ -90,6 +90,7 @@ export default function ExportButton() {
   return (
     <div className="relative" ref={dropdownRef}>
       <button
+        data-export-btn
         onClick={() => setOpen(!open)}
         disabled={exporting}
         className="flex items-center gap-2 px-3 py-1.5 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-lg hover:bg-white/5 transition-colors disabled:opacity-50"
