@@ -382,6 +382,7 @@ export default function Dashboard({ data, columns, stats, analysis, metrics: pro
               charts={chartRecommendations}
               stats={displayStats}
               columns={columns}
+              data={filteredData}
             />
           </ErrorBoundary>
         )}
