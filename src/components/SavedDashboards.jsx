@@ -11,7 +11,7 @@ const DEFAULT_LAYOUT = {
 export default function SavedDashboards({ onLayoutChange }) {
   const [layouts, setLayouts] = useState(() => {
     try {
-      const stored = localStorage.getItem('insightai-layouts');
+      const stored = localStorage.getItem('askdata-layouts');
       return stored ? JSON.parse(stored) : [DEFAULT_LAYOUT];
     } catch { return [DEFAULT_LAYOUT]; }
   });
@@ -22,7 +22,7 @@ export default function SavedDashboards({ onLayoutChange }) {
 
   const save = (updated) => {
     setLayouts(updated);
-    localStorage.setItem('insightai-layouts', JSON.stringify(updated));
+    localStorage.setItem('askdata-layouts', JSON.stringify(updated));
   };
 
   const PANEL_OPTIONS = [

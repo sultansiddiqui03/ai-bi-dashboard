@@ -12,7 +12,7 @@ const INTERVALS = [
 export default function ScheduledAnalysis({ onRunAnalysis, fileName }) {
   const [schedules, setSchedules] = useState(() => {
     try {
-      const stored = localStorage.getItem('insightai-schedules');
+      const stored = localStorage.getItem('askdata-schedules');
       return stored ? JSON.parse(stored) : [];
     } catch { return []; }
   });
@@ -22,7 +22,7 @@ export default function ScheduledAnalysis({ onRunAnalysis, fileName }) {
 
   const save = (updated) => {
     setSchedules(updated);
-    localStorage.setItem('insightai-schedules', JSON.stringify(updated));
+    localStorage.setItem('askdata-schedules', JSON.stringify(updated));
   };
 
   const addSchedule = () => {

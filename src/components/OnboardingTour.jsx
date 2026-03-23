@@ -4,7 +4,7 @@ import { Upload, Brain, BarChart3, MessageSquare, Download, ChevronRight, Chevro
 const TOUR_STEPS = [
   {
     icon: Rocket,
-    title: 'Welcome to InsightAI!',
+    title: 'Welcome to Ask Data!',
     description: 'Your AI-powered Business Intelligence dashboard. Upload any CSV or Excel file and get instant insights, charts, and predictions.',
     color: 'from-[var(--accent)] to-emerald-400',
   },
@@ -51,7 +51,7 @@ export default function OnboardingTour() {
   const [step, setStep] = useState(0);
 
   useEffect(() => {
-    const seen = localStorage.getItem('insightai-tour-seen');
+    const seen = localStorage.getItem('askdata-tour-seen');
     if (!seen) {
       // Small delay so the app renders first
       setTimeout(() => setIsVisible(true), 500);
@@ -60,7 +60,7 @@ export default function OnboardingTour() {
 
   const handleClose = () => {
     setIsVisible(false);
-    localStorage.setItem('insightai-tour-seen', 'true');
+    localStorage.setItem('askdata-tour-seen', 'true');
   };
 
   const handleNext = () => {
@@ -81,8 +81,8 @@ export default function OnboardingTour() {
       setStep(0);
       setIsVisible(true);
     };
-    window.addEventListener('insightai-show-tour', handler);
-    return () => window.removeEventListener('insightai-show-tour', handler);
+    window.addEventListener('askdata-show-tour', handler);
+    return () => window.removeEventListener('askdata-show-tour', handler);
   }, []);
 
   if (!isVisible) return null;

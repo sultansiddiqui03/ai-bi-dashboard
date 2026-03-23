@@ -3,7 +3,7 @@ import { Bell, BellRing, Plus, X, AlertTriangle, Check, TrendingUp, TrendingDown
 
 export default function AnomalyAlerts({ data, columns, stats }) {
   const [alerts, setAlerts] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('insightai-alerts') || '[]'); } catch { return []; }
+    try { return JSON.parse(localStorage.getItem('askdata-alerts') || '[]'); } catch { return []; }
   });
   const [showPanel, setShowPanel] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -17,7 +17,7 @@ export default function AnomalyAlerts({ data, columns, stats }) {
 
   // Save alerts to localStorage
   useEffect(() => {
-    localStorage.setItem('insightai-alerts', JSON.stringify(alerts));
+    localStorage.setItem('askdata-alerts', JSON.stringify(alerts));
   }, [alerts]);
 
   // Auto-detect anomalies using IQR method

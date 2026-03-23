@@ -74,9 +74,9 @@ export default function DashboardBuilder({ metrics, charts, stats, columns }) {
   };
 
   const saveLayout = () => {
-    const layouts = JSON.parse(localStorage.getItem('insightai-builder-layouts') || '[]');
+    const layouts = JSON.parse(localStorage.getItem('askdata-builder-layouts') || '[]');
     layouts.push({ id: Date.now(), widgets, savedAt: new Date().toISOString() });
-    localStorage.setItem('insightai-builder-layouts', JSON.stringify(layouts.slice(-10)));
+    localStorage.setItem('askdata-builder-layouts', JSON.stringify(layouts.slice(-10)));
   };
 
   const numericCols = columns.filter(c => stats[c]?.type === 'numeric');

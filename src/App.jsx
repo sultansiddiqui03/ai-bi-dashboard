@@ -41,16 +41,16 @@ export default function App() {
 
   // Language for AI output
   const [language, setLanguage] = useState(() => {
-    return localStorage.getItem('insightai-language') || 'en';
+    return localStorage.getItem('askdata-language') || 'en';
   });
 
   useEffect(() => {
-    localStorage.setItem('insightai-language', language);
+    localStorage.setItem('askdata-language', language);
   }, [language]);
 
   // Dark mode
   const [darkMode, setDarkMode] = useState(() => {
-    const stored = localStorage.getItem('insightai-theme');
+    const stored = localStorage.getItem('askdata-theme');
     if (stored) return stored === 'dark';
     return true;
   });
@@ -61,7 +61,7 @@ export default function App() {
     } else {
       document.documentElement.classList.add('light');
     }
-    localStorage.setItem('insightai-theme', darkMode ? 'dark' : 'light');
+    localStorage.setItem('askdata-theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
 
   // Load shared report on mount
@@ -138,7 +138,7 @@ export default function App() {
         setActiveTab('insights');
         break;
       case 'show-tour':
-        window.dispatchEvent(new Event('insightai-show-tour'));
+        window.dispatchEvent(new Event('askdata-show-tour'));
         break;
     }
   }, []);

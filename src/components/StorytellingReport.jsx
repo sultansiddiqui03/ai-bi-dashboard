@@ -117,7 +117,7 @@ Write in a professional but engaging tone. Use specific numbers from the data. M
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `InsightAI-Narrative-${Date.now()}.txt`;
+    link.download = `AskData-Narrative-${Date.now()}.txt`;
     link.click();
     URL.revokeObjectURL(url);
   };

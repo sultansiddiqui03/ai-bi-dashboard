@@ -38,7 +38,7 @@ export default function Footer() {
           </div>
 
           <p className="text-xs text-[var(--text-muted)] opacity-60">
-            {currentYear} InsightAI
+            {currentYear} Ask Data
           </p>
         </div>
       </div>

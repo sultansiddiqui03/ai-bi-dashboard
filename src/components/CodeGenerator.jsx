@@ -6,7 +6,7 @@ function generateSQL(columns, stats, analysis) {
   const numericCols = columns.filter(c => stats[c]?.type === 'numeric');
   const categoricalCols = columns.filter(c => stats[c]?.type === 'categorical');
 
-  let sql = `-- SQL queries generated from InsightAI analysis\n-- Table: ${tableName}\n\n`;
+  let sql = `-- SQL queries generated from Ask Data analysis\n-- Table: ${tableName}\n\n`;
 
   // Basic stats query
   sql += `-- Basic Statistics\nSELECT\n`;
@@ -62,7 +62,7 @@ function generatePython(columns, stats, analysis) {
   const numericCols = columns.filter(c => stats[c]?.type === 'numeric');
   const categoricalCols = columns.filter(c => stats[c]?.type === 'categorical');
 
-  let py = `# Python (pandas) code generated from InsightAI analysis\nimport pandas as pd\nimport matplotlib.pyplot as plt\nimport seaborn as sns\n\n`;
+  let py = `# Python (pandas) code generated from Ask Data analysis\nimport pandas as pd\nimport matplotlib.pyplot as plt\nimport seaborn as sns\n\n`;
   py += `# Load your data\ndf = pd.read_csv('your_data.csv')\n\n`;
 
   // Basic stats

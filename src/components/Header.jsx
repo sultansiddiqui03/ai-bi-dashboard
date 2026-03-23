@@ -17,7 +17,7 @@ export default function Header({ fileName, onReset, rowCount, colCount, hasAnaly
           </div>
           <div>
             <h1 className="text-base sm:text-lg font-semibold tracking-tight text-[var(--text-primary)]">
-              Insight<span className="text-[var(--accent)]">AI</span>
+              Ask<span className="text-[var(--accent)]">Data</span>
             </h1>
           </div>
         </div>

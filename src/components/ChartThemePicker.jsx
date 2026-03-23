@@ -15,16 +15,16 @@ const PRESET_THEMES = [
 export default function ChartThemePicker({ onThemeChange }) {
   const [showPicker, setShowPicker] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState(() => {
-    return localStorage.getItem('insightai-chart-theme') || 'default';
+    return localStorage.getItem('askdata-chart-theme') || 'default';
   });
   const [customColors, setCustomColors] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('insightai-custom-colors') || 'null'); } catch { return null; }
+    try { return JSON.parse(localStorage.getItem('askdata-custom-colors') || 'null'); } catch { return null; }
   });
   const [showCustom, setShowCustom] = useState(false);
   const [brandColor, setBrandColor] = useState('#38bdf8');
 
   useEffect(() => {
-    localStorage.setItem('insightai-chart-theme', selectedTheme);
+    localStorage.setItem('askdata-chart-theme', selectedTheme);
     const theme = selectedTheme === 'custom' && customColors
       ? customColors
       : PRESET_THEMES.find(t => t.id === selectedTheme)?.colors || PRESET_THEMES[0].colors;
@@ -56,7 +56,7 @@ export default function ChartThemePicker({ onThemeChange }) {
     );
 
     setCustomColors(colors);
-    localStorage.setItem('insightai-custom-colors', JSON.stringify(colors));
+    localStorage.setItem('askdata-custom-colors', JSON.stringify(colors));
     setSelectedTheme('custom');
   };
 
@@ -130,9 +130,9 @@ export default function ChartThemePicker({ onThemeChange }) {
 
 // Export for use in chart rendering
 export function getThemeColors() {
-  const themeId = localStorage.getItem('insightai-chart-theme') || 'default';
+  const themeId = localStorage.getItem('askdata-chart-theme') || 'default';
   if (themeId === 'custom') {
-    try { return JSON.parse(localStorage.getItem('insightai-custom-colors') || 'null') || PRESET_THEMES[0].colors; } catch { return PRESET_THEMES[0].colors; }
+    try { return JSON.parse(localStorage.getItem('askdata-custom-colors') || 'null') || PRESET_THEMES[0].colors; } catch { return PRESET_THEMES[0].colors; }
   }
   return PRESET_THEMES.find(t => t.id === themeId)?.colors || PRESET_THEMES[0].colors;
 }
