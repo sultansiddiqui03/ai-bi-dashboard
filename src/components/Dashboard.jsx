@@ -14,11 +14,20 @@ import AnalysisTemplates from './AnalysisTemplates';
 import DrillDownModal from './DrillDownModal';
 import MobileNav from './MobileNav';
 import ErrorBoundary from './ErrorBoundary';
+import DataProfiler from './DataProfiler';
+import NLFilter from './NLFilter';
+import ForecastPanel from './ForecastPanel';
+import ReportGenerator from './ReportGenerator';
+import DatasetJoiner from './DatasetJoiner';
+import GoalTracker from './GoalTracker';
+import SavedDashboards from './SavedDashboards';
+import ScheduledAnalysis from './ScheduledAnalysis';
 
-export default function Dashboard({ data, columns, stats, analysis, metrics: propMetrics, charts: propCharts, isAnalyzing, isStreaming, error, queryHistory, onQuery, activeTab: externalTab, onTabChange, onDataUpdate }) {
+export default function Dashboard({ data, columns, stats, analysis, metrics: propMetrics, charts: propCharts, isAnalyzing, isStreaming, error, queryHistory, onQuery, activeTab: externalTab, onTabChange, onDataUpdate, fileName, onJoinComplete, onRunAnalysis }) {
   const [internalTab, setInternalTab] = useState('insights');
   const [filters, setFilters] = useState({});
   const [drillDown, setDrillDown] = useState(null);
+  const [layoutPanels, setLayoutPanels] = useState(['kpis', 'profiler', 'filters', 'charts', 'goals']);
 
   // Support external tab control (from keyboard shortcuts / mobile nav)
   const activeTab = externalTab || internalTab;
@@ -121,6 +130,7 @@ export default function Dashboard({ data, columns, stats, analysis, metrics: pro
   const tabs = [
     { id: 'insights', label: 'AI Insights' },
     { id: 'charts', label: 'Visualizations' },
+    { id: 'forecast', label: 'Forecast' },
     { id: 'data', label: 'Data Preview' },
     { id: 'query', label: 'Ask AI' },
     { id: 'builder', label: 'Chart Builder' },
@@ -165,17 +175,52 @@ export default function Dashboard({ data, columns, stats, analysis, metrics: pro
         </div>
       )}
 
+      {/* Layout Manager + Report Generator */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <SavedDashboards onLayoutChange={setLayoutPanels} />
+        </div>
+        {analysis && (
+          <ReportGenerator
+            data={filteredData}
+            columns={columns}
+            stats={displayStats}
+            analysis={analysis}
+            metrics={displayMetrics}
+            charts={chartRecommendations}
+            fileName={fileName}
+          />
+        )}
+      </div>
+
       {/* Dataset Summary Bar */}
       <DatasetSummary data={data} columns={columns} stats={displayStats} />
 
-      {/* KPI Cards */}
-      <ErrorBoundary fallbackMessage="Failed to render KPI cards.">
-        <KPICards metrics={displayMetrics} stats={displayStats} columns={columns} isLoading={isAnalyzing && !isStreaming} />
-      </ErrorBoundary>
+      {/* Data Quality Profiler */}
+      {data && layoutPanels.includes('profiler') && (
+        <ErrorBoundary fallbackMessage="Failed to render data profiler.">
+          <DataProfiler data={filteredData || data} columns={columns} stats={displayStats} />
+        </ErrorBoundary>
+      )}
 
-      {/* Data Filters + Cleaning */}
-      {data && columns.length > 0 && (
+      {/* KPI Cards */}
+      {layoutPanels.includes('kpis') && (
+        <ErrorBoundary fallbackMessage="Failed to render KPI cards.">
+          <KPICards metrics={displayMetrics} stats={displayStats} columns={columns} isLoading={isAnalyzing && !isStreaming} />
+        </ErrorBoundary>
+      )}
+
+      {/* Goal Tracker */}
+      {data && layoutPanels.includes('goals') && (
+        <ErrorBoundary fallbackMessage="Failed to render goal tracker.">
+          <GoalTracker stats={displayStats} columns={columns} />
+        </ErrorBoundary>
+      )}
+
+      {/* NL Filter + Data Filters + Cleaning */}
+      {data && columns.length > 0 && layoutPanels.includes('filters') && (
         <div className="space-y-3">
+          <NLFilter columns={columns} stats={stats} onApplyFilters={setFilters} />
           <DataFilters
             data={data}
             columns={columns}
@@ -192,6 +237,22 @@ export default function Dashboard({ data, columns, stats, analysis, metrics: pro
             />
           )}
         </div>
+      )}
+
+      {/* Dataset Joiner */}
+      {data && onJoinComplete && layoutPanels.includes('joiner') && (
+        <ErrorBoundary fallbackMessage="Failed to render dataset joiner.">
+          <DatasetJoiner
+            primaryData={data}
+            primaryColumns={columns}
+            onJoinComplete={onJoinComplete}
+          />
+        </ErrorBoundary>
+      )}
+
+      {/* Scheduled Analysis */}
+      {data && (
+        <ScheduledAnalysis onRunAnalysis={onRunAnalysis} fileName={fileName} />
       )}
 
       {/* Filter info + export */}
@@ -258,6 +319,12 @@ export default function Dashboard({ data, columns, stats, analysis, metrics: pro
                 </div>
               )}
             </div>
+          </ErrorBoundary>
+        )}
+
+        {activeTab === 'forecast' && filteredData && (
+          <ErrorBoundary fallbackMessage="Failed to render forecast panel.">
+            <ForecastPanel data={filteredData} columns={columns} stats={displayStats} />
           </ErrorBoundary>
         )}
 

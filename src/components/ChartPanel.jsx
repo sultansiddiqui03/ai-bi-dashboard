@@ -6,6 +6,8 @@ import {
 } from 'recharts';
 import { BarChart3, TrendingUp, AreaChart as AreaIcon, PieChart as PieIcon, ScatterChart as ScatterIcon } from 'lucide-react';
 import { CHART_COLORS } from '../utils/dataProcessor';
+import Annotations from './Annotations';
+import EmbedChart from './EmbedChart';
 
 const TOOLTIP_STYLE = {
   contentStyle: {
@@ -67,7 +69,10 @@ export default function ChartPanel({ chart, index, data: rawData, columns, stats
     <div className="glass-card p-5">
       <div className="mb-4">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-1">{title}</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-1">{title}</h3>
+            <EmbedChart chartTitle={title} chartIndex={index} />
+          </div>
           {/* Chart type toggle buttons */}
           {canToggle && (
             <div className="flex items-center gap-1 bg-[var(--bg-secondary)] rounded-lg p-0.5">
@@ -104,6 +109,8 @@ export default function ChartPanel({ chart, index, data: rawData, columns, stats
           {renderChart(activeType, data, color, x, y, handleBarClick, handlePieClick)}
         </ResponsiveContainer>
       </div>
+
+      <Annotations chartTitle={title || `chart-${index}`} />
     </div>
   );
 }

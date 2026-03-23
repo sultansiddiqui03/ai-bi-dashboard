@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, MessageSquare, Bot, User, Loader2 } from 'lucide-react';
+import VoiceInput from './VoiceInput';
 
 const SUGGESTED_QUERIES = [
   "What are the top 5 trends in this data?",
@@ -28,6 +29,14 @@ export default function QueryInput({ onQuery, queryHistory, isDataLoaded }) {
   const handleSuggestion = (q) => {
     onQuery(q);
   };
+
+  const handleVoiceTranscript = useCallback((transcript) => {
+    setQuery(transcript);
+    // Auto-submit after voice input
+    if (transcript.trim() && isDataLoaded) {
+      onQuery(transcript.trim());
+    }
+  }, [isDataLoaded, onQuery]);
 
   return (
     <div className="max-w-3xl">
@@ -102,6 +111,7 @@ export default function QueryInput({ onQuery, queryHistory, isDataLoaded }) {
             placeholder="Ask a question about your data..."
             className="flex-1 px-4 py-3 rounded-xl bg-[var(--bg-card)] border border-[var(--border-subtle)] text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--border-active)] focus:ring-1 focus:ring-[var(--accent)]/20 transition-all"
           />
+          <VoiceInput onTranscript={handleVoiceTranscript} disabled={!isDataLoaded} />
           <button
             onClick={handleSubmit}
             disabled={!query.trim()}
@@ -111,7 +121,7 @@ export default function QueryInput({ onQuery, queryHistory, isDataLoaded }) {
           </button>
         </div>
         <p className="text-[10px] text-[var(--text-muted)] mt-1.5 text-center">
-          Press Enter to send
+          Press Enter to send · Click the mic for voice input
         </p>
       </div>
     </div>

@@ -10,6 +10,7 @@ import Footer from './components/Footer';
 import Toast from './components/Toast';
 import ErrorBoundary from './components/ErrorBoundary';
 import KeyboardShortcuts from './components/KeyboardShortcuts';
+import ColumnMappingWizard from './components/ColumnMappingWizard';
 import { computeStats, formatDataPreview, parseAIResponse } from './utils/dataProcessor';
 
 export default function App() {
@@ -28,6 +29,8 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [comparisonMode, setComparisonMode] = useState(false);
   const [activeTab, setActiveTab] = useState('insights');
+  const [showColumnWizard, setShowColumnWizard] = useState(false);
+  const [pendingAnalysis, setPendingAnalysis] = useState(null);
 
   // Dark mode
   const [darkMode, setDarkMode] = useState(() => {
@@ -130,6 +133,7 @@ export default function App() {
     setAiMetrics([]);
     setAiCharts([]);
     setActiveTab('insights');
+    setShowColumnWizard(false);
 
     try {
       const { data: parsedData, columns: cols } = await parseFileContents(file);
@@ -138,12 +142,47 @@ export default function App() {
       const computedStats = computeStats(parsedData, cols);
       setStats(computedStats);
 
-      // Auto-analyze with streaming
-      await analyzeDataStreaming(parsedData, cols, computedStats, file.name);
+      // Show column mapping wizard before analysis
+      setPendingAnalysis({ data: parsedData, cols, stats: computedStats, name: file.name });
+      setShowColumnWizard(true);
     } catch (err) {
       setError(`Failed to parse file: ${err.message}`);
     }
   }, []);
+
+  const handleColumnMappingConfirm = useCallback(async (mappings) => {
+    setShowColumnWizard(false);
+    if (pendingAnalysis) {
+      const { data: parsedData, cols, stats: computedStats, name } = pendingAnalysis;
+      setPendingAnalysis(null);
+      await analyzeDataStreaming(parsedData, cols, computedStats, name);
+    }
+  }, [pendingAnalysis]);
+
+  const handleColumnMappingSkip = useCallback(async () => {
+    setShowColumnWizard(false);
+    if (pendingAnalysis) {
+      const { data: parsedData, cols, stats: computedStats, name } = pendingAnalysis;
+      setPendingAnalysis(null);
+      await analyzeDataStreaming(parsedData, cols, computedStats, name);
+    }
+  }, [pendingAnalysis]);
+
+  // Handle dataset join
+  const handleJoinComplete = useCallback((joinedData, newCols) => {
+    setData(joinedData);
+    setColumns(newCols);
+    const newStats = computeStats(joinedData, newCols);
+    setStats(newStats);
+    showToast(`Datasets joined! ${joinedData.length} rows, ${newCols.length} columns.`);
+  }, []);
+
+  // Re-run analysis (for scheduled analysis)
+  const handleRunAnalysis = useCallback(() => {
+    if (data && columns.length) {
+      analyzeDataStreaming(data, columns, stats, fileName);
+    }
+  }, [data, columns, stats, fileName]);
 
   const analyzeDataStreaming = async (parsedData, cols, computedStats, name) => {
     setIsAnalyzing(true);
@@ -489,7 +528,17 @@ export default function App() {
       />
 
       <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pb-20 flex-1 w-full">
-        {comparisonMode ? (
+        {showColumnWizard && data && columns.length > 0 ? (
+          <div className="py-12">
+            <ColumnMappingWizard
+              data={data}
+              columns={columns}
+              stats={stats}
+              onConfirm={handleColumnMappingConfirm}
+              onSkip={handleColumnMappingSkip}
+            />
+          </div>
+        ) : comparisonMode ? (
           <ComparisonMode onBack={() => setComparisonMode(false)} />
         ) : !data && !hasAnalysis ? (
           <div className="space-y-8">
@@ -526,6 +575,9 @@ export default function App() {
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
                 onDataUpdate={data ? handleDataUpdate : undefined}
+                fileName={fileName}
+                onJoinComplete={data ? handleJoinComplete : undefined}
+                onRunAnalysis={handleRunAnalysis}
               />
             </ErrorBoundary>
           </>
