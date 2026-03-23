@@ -11,6 +11,12 @@ import Toast from './components/Toast';
 import ErrorBoundary from './components/ErrorBoundary';
 import KeyboardShortcuts from './components/KeyboardShortcuts';
 import ColumnMappingWizard from './components/ColumnMappingWizard';
+import CommandPalette from './components/CommandPalette';
+import OnboardingTour from './components/OnboardingTour';
+import DataConnectors from './components/DataConnectors';
+import LanguageSelector, { getLanguageInstruction } from './components/LanguageSelector';
+import ShareWithPassword from './components/ShareWithPassword';
+import SamplingIndicator from './components/SamplingIndicator';
 import { computeStats, formatDataPreview, parseAIResponse } from './utils/dataProcessor';
 
 export default function App() {
@@ -31,12 +37,22 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('insights');
   const [showColumnWizard, setShowColumnWizard] = useState(false);
   const [pendingAnalysis, setPendingAnalysis] = useState(null);
+  const [chartColors, setChartColors] = useState(null);
+
+  // Language for AI output
+  const [language, setLanguage] = useState(() => {
+    return localStorage.getItem('insightai-language') || 'en';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('insightai-language', language);
+  }, [language]);
 
   // Dark mode
   const [darkMode, setDarkMode] = useState(() => {
     const stored = localStorage.getItem('insightai-theme');
     if (stored) return stored === 'dark';
-    return true; // default dark
+    return true;
   });
 
   useEffect(() => {
@@ -52,6 +68,17 @@ export default function App() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const reportId = params.get('report');
+    const expiryStr = params.get('expires');
+
+    // Check expiry
+    if (expiryStr) {
+      const expiryDate = new Date(expiryStr);
+      if (expiryDate < new Date()) {
+        setError('This shared link has expired.');
+        return;
+      }
+    }
+
     if (reportId) {
       loadFromHistory(reportId);
     }
@@ -61,8 +88,8 @@ export default function App() {
     setToast({ message, type, key: Date.now() });
   };
 
-  // Keyboard shortcut handler
-  const handleShortcut = useCallback((action) => {
+  // Command palette + keyboard shortcut handler
+  const handleAction = useCallback((action) => {
     switch (action) {
       case 'search':
       case 'tab-query':
@@ -83,12 +110,35 @@ export default function App() {
       case 'tab-templates':
         setActiveTab('templates');
         break;
+      case 'tab-forecast':
+        setActiveTab('forecast');
+        break;
+      case 'tab-dashboard-builder':
+        setActiveTab('dashboard-builder');
+        break;
       case 'theme':
         setDarkMode(d => !d);
         break;
       case 'export':
-        // Trigger export button click
         document.querySelector('[data-export-btn]')?.click();
+        break;
+      case 'share':
+        handleShare();
+        break;
+      case 'reset':
+        handleReset();
+        break;
+      case 'run-analysis':
+        handleRunAnalysis();
+        break;
+      case 'generate-story':
+        setActiveTab('insights');
+        break;
+      case 'generate-code':
+        setActiveTab('insights');
+        break;
+      case 'show-tour':
+        window.dispatchEvent(new Event('insightai-show-tour'));
         break;
     }
   }, []);
@@ -142,12 +192,30 @@ export default function App() {
       const computedStats = computeStats(parsedData, cols);
       setStats(computedStats);
 
-      // Show column mapping wizard before analysis
       setPendingAnalysis({ data: parsedData, cols, stats: computedStats, name: file.name });
       setShowColumnWizard(true);
     } catch (err) {
       setError(`Failed to parse file: ${err.message}`);
     }
+  }, []);
+
+  // Handle data loaded from connectors (CSV URL, JSON API, Google Sheets)
+  const handleConnectorData = useCallback((parsedData, cols, name) => {
+    setError(null);
+    setFileName(name);
+    setSavedId(null);
+    setComparisonMode(false);
+    setAiMetrics([]);
+    setAiCharts([]);
+    setActiveTab('insights');
+
+    setData(parsedData);
+    setColumns(cols);
+    const computedStats = computeStats(parsedData, cols);
+    setStats(computedStats);
+
+    setPendingAnalysis({ data: parsedData, cols, stats: computedStats, name });
+    setShowColumnWizard(true);
   }, []);
 
   const handleColumnMappingConfirm = useCallback(async (mappings) => {
@@ -168,7 +236,6 @@ export default function App() {
     }
   }, [pendingAnalysis]);
 
-  // Handle dataset join
   const handleJoinComplete = useCallback((joinedData, newCols) => {
     setData(joinedData);
     setColumns(newCols);
@@ -177,7 +244,6 @@ export default function App() {
     showToast(`Datasets joined! ${joinedData.length} rows, ${newCols.length} columns.`);
   }, []);
 
-  // Re-run analysis (for scheduled analysis)
   const handleRunAnalysis = useCallback(() => {
     if (data && columns.length) {
       analyzeDataStreaming(data, columns, stats, fileName);
@@ -192,6 +258,8 @@ export default function App() {
     setAiMetrics([]);
     setAiCharts([]);
 
+    const langInstruction = getLanguageInstruction(language);
+
     try {
       const response = await fetch('/api/stream', {
         method: 'POST',
@@ -201,6 +269,8 @@ export default function App() {
           columns: cols,
           stats: computedStats,
           mode: 'analyze',
+          language: language,
+          languageInstruction: langInstruction,
         }),
       });
 
@@ -233,10 +303,7 @@ export default function App() {
 
           try {
             const parsed = JSON.parse(payload);
-            if (parsed.error) {
-              setError(parsed.error);
-              break;
-            }
+            if (parsed.error) { setError(parsed.error); break; }
             if (parsed.type === 'structured') {
               receivedMetrics = parsed.metrics || [];
               receivedCharts = parsed.charts || [];
@@ -248,9 +315,7 @@ export default function App() {
               fullText += parsed.content;
               setAnalysis(fullText);
             }
-          } catch (e) {
-            // skip malformed
-          }
+          } catch (e) {}
         }
       }
 
@@ -280,6 +345,8 @@ export default function App() {
           columns: cols,
           stats: computedStats,
           mode: 'analyze',
+          language: language,
+          languageInstruction: getLanguageInstruction(language),
         }),
       });
 
@@ -367,23 +434,22 @@ export default function App() {
     }
   };
 
-  // AI Chat with memory — include conversation history for context
   const handleQuery = async (query) => {
     if (!query.trim()) return;
 
     const newEntry = { query, answer: null, loading: true, streaming: false, id: Date.now() };
     setQueryHistory(prev => [...prev, newEntry]);
 
-    // Build conversation memory (last 5 Q&A pairs for context)
     const recentHistory = queryHistory
       .filter(e => e.answer && !e.loading)
       .slice(-5)
       .map(e => `Q: ${e.query}\nA: ${e.answer}`)
       .join('\n\n');
 
+    const langInstruction = getLanguageInstruction(language);
     const queryWithContext = recentHistory
-      ? `Previous conversation:\n${recentHistory}\n\nNew question: ${query}`
-      : query;
+      ? `Previous conversation:\n${recentHistory}\n\nNew question: ${query}${langInstruction}`
+      : `${query}${langInstruction}`;
 
     try {
       const response = await fetch('/api/stream', {
@@ -422,7 +488,6 @@ export default function App() {
           if (!trimmed || !trimmed.startsWith('data: ')) continue;
           const payload = trimmed.slice(6);
           if (payload === '[DONE]') continue;
-
           try {
             const parsed = JSON.parse(payload);
             if (parsed.content) {
@@ -445,8 +510,7 @@ export default function App() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             dataPreview: data ? formatDataPreview(data) : '',
-            columns,
-            stats,
+            columns, stats,
             query: queryWithContext,
             mode: 'query',
           }),
@@ -455,23 +519,19 @@ export default function App() {
         if (!response.ok) throw new Error('Query failed');
         const result = await response.json();
         setQueryHistory(prev =>
-          prev.map(e =>
-            e.id === newEntry.id ? { ...e, answer: result.analysis, loading: false, streaming: false } : e
-          )
+          prev.map(e => e.id === newEntry.id ? { ...e, answer: result.analysis, loading: false, streaming: false } : e)
         );
       } catch (fallbackErr) {
         setQueryHistory(prev =>
-          prev.map(e =>
-            e.id === newEntry.id
-              ? { ...e, answer: 'Sorry, I couldn\'t process that query. Please try again.', loading: false, streaming: false }
-              : e
+          prev.map(e => e.id === newEntry.id
+            ? { ...e, answer: 'Sorry, I couldn\'t process that query. Please try again.', loading: false, streaming: false }
+            : e
           )
         );
       }
     }
   };
 
-  // Handle data updates from cleaning panel
   const handleDataUpdate = useCallback((newData) => {
     setData(newData);
     const newStats = computeStats(newData, columns);
@@ -525,6 +585,8 @@ export default function App() {
         onShare={handleShare}
         darkMode={darkMode}
         onToggleTheme={() => setDarkMode(d => !d)}
+        language={language}
+        onLanguageChange={setLanguage}
       />
 
       <main className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 pb-20 flex-1 w-full">
@@ -547,6 +609,10 @@ export default function App() {
               error={error}
               onCompareMode={() => setComparisonMode(true)}
             />
+            {/* Data Connectors */}
+            <div className="max-w-2xl mx-auto">
+              <DataConnectors onDataLoaded={handleConnectorData} />
+            </div>
             <div className="max-w-2xl mx-auto">
               <AnalysisHistory onLoad={loadFromHistory} />
             </div>
@@ -559,6 +625,14 @@ export default function App() {
                 Saved to history
               </div>
             )}
+
+            {/* Sampling indicator */}
+            {data && data.length > 10000 && (
+              <div className="mt-2">
+                <SamplingIndicator totalRows={data.length} analyzedRows={Math.min(data.length, 10000)} />
+              </div>
+            )}
+
             <ErrorBoundary fallbackMessage="Dashboard encountered an error. Please try uploading your data again.">
               <Dashboard
                 data={data}
@@ -578,6 +652,9 @@ export default function App() {
                 fileName={fileName}
                 onJoinComplete={data ? handleJoinComplete : undefined}
                 onRunAnalysis={handleRunAnalysis}
+                chartColors={chartColors}
+                onChartColorsChange={setChartColors}
+                language={language}
               />
             </ErrorBoundary>
           </>
@@ -588,8 +665,14 @@ export default function App() {
 
       {/* Keyboard shortcuts */}
       {(data || hasAnalysis) && (
-        <KeyboardShortcuts onAction={handleShortcut} />
+        <KeyboardShortcuts onAction={handleAction} />
       )}
+
+      {/* Command Palette — always available */}
+      <CommandPalette onAction={handleAction} isVisible={data || hasAnalysis} />
+
+      {/* Onboarding Tour */}
+      <OnboardingTour />
 
       {/* Toast notifications */}
       {toast && (

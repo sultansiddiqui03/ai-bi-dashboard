@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Brain, RotateCcw, Database, Sun, Moon, Share2, Menu, X } from 'lucide-react';
 import ExportButton from './ExportButton';
+import LanguageSelector from './LanguageSelector';
+import ShareWithPassword from './ShareWithPassword';
 
-export default function Header({ fileName, onReset, rowCount, colCount, hasAnalysis, savedId, onShare, darkMode, onToggleTheme }) {
+export default function Header({ fileName, onReset, rowCount, colCount, hasAnalysis, savedId, onShare, darkMode, onToggleTheme, language, onLanguageChange }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -39,6 +41,8 @@ export default function Header({ fileName, onReset, rowCount, colCount, hasAnaly
 
         {/* Desktop Actions */}
         <div className="hidden sm:flex items-center gap-2">
+          <LanguageSelector language={language} onLanguageChange={onLanguageChange} />
+
           <button
             onClick={onToggleTheme}
             className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/5 transition-colors"
@@ -46,6 +50,8 @@ export default function Header({ fileName, onReset, rowCount, colCount, hasAnaly
           >
             {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
+
+          {hasAnalysis && <ShareWithPassword />}
 
           {hasAnalysis && savedId && (
             <button
@@ -109,6 +115,10 @@ export default function Header({ fileName, onReset, rowCount, colCount, hasAnaly
                 {rowCount && <span>• {rowCount.toLocaleString()} rows</span>}
               </div>
             )}
+            <div className="px-3 py-1">
+              <LanguageSelector language={language} onLanguageChange={onLanguageChange} />
+            </div>
+            {hasAnalysis && <div className="px-3 py-1"><ShareWithPassword /></div>}
             {hasAnalysis && savedId && (
               <button
                 onClick={() => { onShare(); setMobileMenuOpen(false); }}

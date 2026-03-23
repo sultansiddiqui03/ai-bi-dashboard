@@ -31,6 +31,7 @@ export default function SavedDashboards({ onLayoutChange }) {
     { id: 'filters', label: 'Filters & Cleaning' },
     { id: 'charts', label: 'Charts' },
     { id: 'goals', label: 'Goal Tracker' },
+    { id: 'anomalies', label: 'Anomaly Alerts' },
     { id: 'forecast', label: 'Forecast Panel' },
     { id: 'joiner', label: 'Dataset Joiner' },
   ];

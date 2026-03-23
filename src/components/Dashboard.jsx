@@ -22,16 +22,23 @@ import DatasetJoiner from './DatasetJoiner';
 import GoalTracker from './GoalTracker';
 import SavedDashboards from './SavedDashboards';
 import ScheduledAnalysis from './ScheduledAnalysis';
+import AnomalyAlerts from './AnomalyAlerts';
+import CodeGenerator from './CodeGenerator';
+import ChartThemePicker from './ChartThemePicker';
+import StorytellingReport from './StorytellingReport';
+import DashboardBuilder from './DashboardBuilder';
 
-export default function Dashboard({ data, columns, stats, analysis, metrics: propMetrics, charts: propCharts, isAnalyzing, isStreaming, error, queryHistory, onQuery, activeTab: externalTab, onTabChange, onDataUpdate, fileName, onJoinComplete, onRunAnalysis }) {
+export default function Dashboard({ data, columns, stats, analysis, metrics: propMetrics, charts: propCharts, isAnalyzing, isStreaming, error, queryHistory, onQuery, activeTab: externalTab, onTabChange, onDataUpdate, fileName, onJoinComplete, onRunAnalysis, chartColors, onChartColorsChange, language }) {
   const [internalTab, setInternalTab] = useState('insights');
   const [filters, setFilters] = useState({});
   const [drillDown, setDrillDown] = useState(null);
-  const [layoutPanels, setLayoutPanels] = useState(['kpis', 'profiler', 'filters', 'charts', 'goals']);
+  const [layoutPanels, setLayoutPanels] = useState(['kpis', 'profiler', 'filters', 'charts', 'goals', 'anomalies']);
 
-  // Support external tab control (from keyboard shortcuts / mobile nav)
   const activeTab = externalTab || internalTab;
   const setActiveTab = onTabChange || setInternalTab;
+
+  // Use custom chart colors or defaults
+  const activeChartColors = chartColors || CHART_COLORS;
 
   // Apply filters to data
   const filteredData = useMemo(() => {
@@ -52,7 +59,6 @@ export default function Dashboard({ data, columns, stats, analysis, metrics: pro
     return computeStats(filteredData, columns);
   }, [filteredData, columns, stats, filters]);
 
-  // Use metrics/charts from props (two-call architecture) with fallback to parsing
   const displayMetrics = useMemo(() => {
     if (propMetrics && propMetrics.length > 0) return propMetrics;
     if (!analysis) return [];
@@ -67,7 +73,6 @@ export default function Dashboard({ data, columns, stats, analysis, metrics: pro
     return parsed.chartRecommendations;
   }, [propCharts, analysis]);
 
-  // Clean text for display
   const cleanAnalysisText = useMemo(() => {
     if (!analysis) return '';
     if (propMetrics && propMetrics.length > 0) return analysis;
@@ -75,17 +80,15 @@ export default function Dashboard({ data, columns, stats, analysis, metrics: pro
     return parsed.cleanText;
   }, [analysis, propMetrics]);
 
-  // Prepare chart data using filtered data
   const charts = useMemo(() => {
     if (!chartRecommendations.length || !filteredData) return [];
     return chartRecommendations.map((config, i) => ({
       ...config,
       data: prepareChartData(filteredData, config),
-      color: CHART_COLORS[i % CHART_COLORS.length],
+      color: activeChartColors[i % activeChartColors.length],
     }));
-  }, [chartRecommendations, filteredData]);
+  }, [chartRecommendations, filteredData, activeChartColors]);
 
-  // Auto-generate basic charts if AI didn't provide any
   const autoCharts = useMemo(() => {
     if (charts.length > 0 || !filteredData || !columns.length) return [];
     const numericCols = columns.filter(c => displayStats[c]?.type === 'numeric');
@@ -99,7 +102,7 @@ export default function Dashboard({ data, columns, stats, analysis, metrics: pro
         type: 'bar', x: cat, y: num,
         title: `${num} by ${cat}`,
         data: prepareChartData(filteredData, { type: 'bar', x: cat, y: num }),
-        color: CHART_COLORS[0],
+        color: activeChartColors[0],
       });
     }
 
@@ -108,7 +111,7 @@ export default function Dashboard({ data, columns, stats, analysis, metrics: pro
         type: 'scatter', x: numericCols[0], y: numericCols[1],
         title: `${numericCols[1]} vs ${numericCols[0]}`,
         data: prepareChartData(filteredData, { type: 'scatter', x: numericCols[0], y: numericCols[1] }),
-        color: CHART_COLORS[1],
+        color: activeChartColors[1],
       });
     }
 
@@ -118,12 +121,12 @@ export default function Dashboard({ data, columns, stats, analysis, metrics: pro
         type: 'pie', x: cat, y: null,
         title: `Distribution by ${cat}`,
         data: prepareChartData(filteredData, { type: 'pie', x: cat }),
-        color: CHART_COLORS[2],
+        color: activeChartColors[2],
       });
     }
 
     return generated;
-  }, [charts, filteredData, columns, displayStats]);
+  }, [charts, filteredData, columns, displayStats, activeChartColors]);
 
   const displayCharts = charts.length > 0 ? charts : autoCharts;
 
@@ -134,6 +137,7 @@ export default function Dashboard({ data, columns, stats, analysis, metrics: pro
     { id: 'data', label: 'Data Preview' },
     { id: 'query', label: 'Ask AI' },
     { id: 'builder', label: 'Chart Builder' },
+    { id: 'dashboard-builder', label: 'Dashboard' },
     { id: 'templates', label: 'Templates' },
   ];
 
@@ -142,7 +146,6 @@ export default function Dashboard({ data, columns, stats, analysis, metrics: pro
     setDrillDown({ filterCol: col, filterValue: value });
   };
 
-  // Export filtered data as CSV
   const exportFilteredCSV = useCallback(() => {
     if (!filteredData || !columns.length) return;
     const header = columns.join(',');
@@ -175,11 +178,12 @@ export default function Dashboard({ data, columns, stats, analysis, metrics: pro
         </div>
       )}
 
-      {/* Layout Manager + Report Generator */}
+      {/* Layout Manager + Chart Theme + Report Generator */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex-1 min-w-0">
           <SavedDashboards onLayoutChange={setLayoutPanels} />
         </div>
+        <ChartThemePicker onThemeChange={onChartColorsChange} />
         {analysis && (
           <ReportGenerator
             data={filteredData}
@@ -195,6 +199,13 @@ export default function Dashboard({ data, columns, stats, analysis, metrics: pro
 
       {/* Dataset Summary Bar */}
       <DatasetSummary data={data} columns={columns} stats={displayStats} />
+
+      {/* Anomaly Alerts */}
+      {data && layoutPanels.includes('anomalies') && (
+        <ErrorBoundary fallbackMessage="Failed to render anomaly alerts.">
+          <AnomalyAlerts data={filteredData || data} columns={columns} stats={displayStats} />
+        </ErrorBoundary>
+      )}
 
       {/* Data Quality Profiler */}
       {data && layoutPanels.includes('profiler') && (
@@ -215,6 +226,22 @@ export default function Dashboard({ data, columns, stats, analysis, metrics: pro
         <ErrorBoundary fallbackMessage="Failed to render goal tracker.">
           <GoalTracker stats={displayStats} columns={columns} />
         </ErrorBoundary>
+      )}
+
+      {/* Code Generator + Data Story */}
+      {analysis && (
+        <div className="space-y-3">
+          <CodeGenerator columns={columns} stats={displayStats} analysis={analysis} />
+          <StorytellingReport
+            data={filteredData}
+            columns={columns}
+            stats={displayStats}
+            analysis={analysis}
+            metrics={displayMetrics}
+            fileName={fileName}
+            onQuery={onQuery}
+          />
+        </div>
       )}
 
       {/* NL Filter + Data Filters + Cleaning */}
@@ -271,7 +298,7 @@ export default function Dashboard({ data, columns, stats, analysis, metrics: pro
         </div>
       )}
 
-      {/* Desktop Tabs - hidden on mobile (mobile nav shown at bottom) */}
+      {/* Desktop Tabs */}
       <div className="hidden sm:flex items-center gap-1 border-b border-[var(--border-subtle)] pb-px overflow-x-auto">
         {tabs.map(tab => (
           <button
@@ -345,6 +372,17 @@ export default function Dashboard({ data, columns, stats, analysis, metrics: pro
         {activeTab === 'builder' && (
           <ErrorBoundary fallbackMessage="Failed to render chart builder.">
             <ChartBuilder data={filteredData} columns={columns} stats={displayStats} />
+          </ErrorBoundary>
+        )}
+
+        {activeTab === 'dashboard-builder' && (
+          <ErrorBoundary fallbackMessage="Failed to render dashboard builder.">
+            <DashboardBuilder
+              metrics={displayMetrics}
+              charts={chartRecommendations}
+              stats={displayStats}
+              columns={columns}
+            />
           </ErrorBoundary>
         )}
 
